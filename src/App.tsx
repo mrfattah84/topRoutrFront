@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import MapPage from "./pages/MapPage";
 import RegisterPage from "./pages/RegisterPage";
+import "./app.css";
 
 function App() {
   return (
