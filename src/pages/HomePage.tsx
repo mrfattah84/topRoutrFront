@@ -9,8 +9,9 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import Map from "../components/Map";
+import CustomTable from "../components/CustomTable";
 
-const { Header, Content, Sider } = Layout;
+const { Header, Content, Sider, Footer } = Layout;
 
 const HomePage = () => {
   return (
@@ -32,9 +33,12 @@ const HomePage = () => {
               label: "Data",
               icon: <FileOutlined />,
               children: [
-                { key: "1-1", label: "calendar" },
+                {
+                  key: "1-1",
+                  label: "calendar",
+                },
                 { key: "1-2", label: "Fleet" },
-                { key: "1-3", label: "Order" },
+                { key: "1-3", label: "Order", onClick: () => {} },
               ],
             },
             {
@@ -95,6 +99,9 @@ const HomePage = () => {
         <Content>
           <Map />
         </Content>
+        <Footer style={{ background: "#FFFFFF" }}>
+          <CustomTable />
+        </Footer>
       </Layout>
     </Layout>
   );
