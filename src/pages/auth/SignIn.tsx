@@ -3,9 +3,10 @@ import { Input, Button } from "antd";
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useDispatch } from "react-redux";
-import { setCredentials } from "./authSlice";
-import { useLoginMutation } from "../../api/authApiSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { setCredentials, selectCurrentToken } from "./authSlice";
+import { useLoginMutation, useOtpMutation } from "../../api/authApiSlice";
+import { store } from "../../store";
 
 const SignIn = ({ toggle }) => {
   const [email, setEmail] = useState("");
@@ -15,12 +16,24 @@ const SignIn = ({ toggle }) => {
   const navigate = useNavigate();
 
   const [login, { isLoading }] = useLoginMutation();
+  const [otpCall] = useOtpMutation();
+  const shouldNavigateRef = useRef(false);
+
   const dispatch = useDispatch();
+  const token = useSelector(selectCurrentToken);
+
+  // Navigate when token becomes available after successful login
+  useEffect(() => {
+    if (shouldNavigateRef.current && token) {
+      navigate("/home");
+      shouldNavigateRef.current = false;
+    }
+  }, [token, navigate]);
 
   const handleSubmit = async () => {
     if (step == 0) {
       try {
-        //request for otp
+        await otpCall({ email: email, password: password });
         setStep(1);
       } catch {
         alert("aomething happened try again later");
@@ -28,12 +41,44 @@ const SignIn = ({ toggle }) => {
     } else {
       try {
         const userData = await login({ email, password, otp }).unwrap();
+        console.log("Login response:", userData);
+
+        // Dispatch credentials
         dispatch(setCredentials({ ...userData, email }));
+
+        // Wait for Redux state to update, then verify token is in store before navigating
+        let retryCount = 0;
+        const maxRetries = 10;
+
+        const checkAndNavigate = () => {
+          const currentState = store.getState();
+          const tokenInStore = currentState.auth.token;
+          console.log("Token in store:", tokenInStore, "Retry:", retryCount);
+
+          if (tokenInStore) {
+            console.log("Navigating to /home");
+            // Use requestAnimationFrame to ensure React has processed state updates
+            requestAnimationFrame(() => {
+              navigate("/home", { replace: true });
+            });
+          } else if (retryCount < maxRetries) {
+            // Retry after a short delay if token not yet in store
+            retryCount++;
+            setTimeout(checkAndNavigate, 50);
+          } else {
+            console.error("Token not found in store after max retries");
+            // Fallback: try navigating anyway
+            navigate("/home", { replace: true });
+          }
+        };
+
+        // Start checking after a brief delay to allow Redux to process
+        setTimeout(checkAndNavigate, 50);
+
         setEmail("");
         setPassword("");
         setOtp("");
         setStep(0);
-        navigate("/home");
       } catch (err) {
         console.error("Failed to login: ", err);
       }

@@ -17,7 +17,14 @@ export const authApiSlice = apiSlice.injectEndpoints({
         body: { ...data },
       }),
     }),
+    otp: builder.mutation({
+      query: (data) => ({
+        url: "/auth/request-otp-for-login/",
+        method: "POST",
+        body: { ...data },
+      }),
+    }),
   }),
 });
 
-export const { useLoginMutation, useSignupMutation } = authApiSlice;
+export const { useLoginMutation, useSignupMutation, useOtpMutation } = authApiSlice;
