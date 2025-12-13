@@ -202,13 +202,13 @@ const OrderTable = () => {
   const dispatch = useDispatch();
 
   return (
-    <div>
+    <div className="relative">
       <div
-        className="flex gap-2 bg-[#B5BAB9] p-2 rounded-t-md w-min"
+        className="flex gap-2 bg-[#B5BAB9] p-2 rounded-t-md w-min absolute -top-12 left-0"
         onClick={(e) => dispatch(setForm(e.target.innerText))}
       >
         <Button color="default" variant="text">
-          Add order
+          Add
         </Button>
         <Button color="default" variant="text">
           Edit
@@ -224,11 +224,11 @@ const OrderTable = () => {
         </Button>
       </div>
       <Table
-        className=" overflow-x-scroll overflow-y-hidden"
         columns={columns}
         dataSource={data}
         loading={isLoading}
         pagination={{ placement: ["none", "none"] }}
+        scroll={{ x: "max-content" }}
       />
     </div>
   );

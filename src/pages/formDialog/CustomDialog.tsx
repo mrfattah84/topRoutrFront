@@ -8,6 +8,14 @@ import {
   setSidebarMenue,
 } from "./dialogSlice";
 import Calendar from "../data/Calendar";
+import AddOrder from "./forms/order/AddOrder";
+import EditOrder from "./forms/order/EditOrder";
+import AddFleet from "./forms/fleet/AddFleet";
+import DeleteOrder from "./forms/order/DeleteOrder";
+import DeleteFleet from "./forms/fleet/DeleteFleet";
+import EditFleet from "./forms/fleet/EditFleet";
+import ImportFleet from "./forms/fleet/ImportFleet";
+import ImportOrder from "./forms/order/ImportOrder";
 
 const CustomDialog = () => {
   const [open, setOpen] = useState(false);
@@ -62,14 +70,14 @@ const CustomDialog = () => {
     // Form-based views
     if (menue === "data-fleet") {
       switch (form) {
-        case "Add order":
-          return <div>Add Fleet Order Form</div>;
+        case "Add":
+          return <AddFleet />;
         case "Edit":
-          return <div>Edit Fleet Form</div>;
+          return <EditFleet />;
         case "Delete":
-          return <div>Delete Fleet Confirmation</div>;
+          return <DeleteFleet />;
         case "Import":
-          return <div>Import Fleet Form</div>;
+          return <ImportFleet />;
         case "Export":
           return <div>Export Fleet Form</div>;
         default:
@@ -79,14 +87,14 @@ const CustomDialog = () => {
 
     if (menue === "data-order") {
       switch (form) {
-        case "Add order":
-          return <div>Add Order Form</div>;
+        case "Add":
+          return <AddOrder />;
         case "Edit":
-          return <div>Edit Order Form</div>;
+          return <EditOrder />;
         case "Delete":
-          return <div>Delete Order Confirmation</div>;
+          return <DeleteOrder />;
         case "Import":
-          return <div>Import Order Form</div>;
+          return <ImportOrder />;
         case "Export":
           return <div>Export Order Form</div>;
         default:
@@ -99,7 +107,7 @@ const CustomDialog = () => {
 
   // Function to get the modal title
   const getModalTitle = () => {
-    if (menue == "data-calendar") {
+    if (menue == "data-calendar" || (!menue && !form)) {
       return "Calendar";
     }
 
