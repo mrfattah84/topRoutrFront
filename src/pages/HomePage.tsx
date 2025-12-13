@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Breadcrumb, Button, Layout, Menu, theme } from "antd";
+import { useState } from "react";
+import { Button, Layout, Menu } from "antd";
 import {
   BarChartOutlined,
   ContainerOutlined,
@@ -9,11 +9,41 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import Map from "../components/Map";
-import CustomTable from "../components/CustomTable";
+import { useNavigate } from "react-router-dom";
+import OrderTable from "./table/OrderTable";
+import FleetTable from "./table/FleetTable";
+import CustomDialog from "./formDialog/CustomDialog";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectCurrentSidebarMenue,
+  setSidebarMenue,
+} from "./formDialog/dialogSlice";
 
 const { Header, Content, Sider, Footer } = Layout;
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const menue = useSelector(selectCurrentSidebarMenue);
+  const dispatch = useDispatch();
+
+  const dataMenuItems = [
+    {
+      key: "data-calendar",
+      label: "Calendar",
+      onClick: () => dispatch(setSidebarMenue("data-calendar")),
+    },
+    {
+      key: "data-fleet",
+      label: "Fleet",
+      onClick: () => dispatch(setSidebarMenue("data-fleet")),
+    },
+    {
+      key: "data-order",
+      label: "Order",
+      onClick: () => dispatch(setSidebarMenue("data-order")),
+    },
+  ];
+
   return (
     <Layout className="h-full p-5" style={{ background: "#FFFFFF" }}>
       <Sider
@@ -21,7 +51,12 @@ const HomePage = () => {
         style={{ background: "#F2F2F2" }}
         className="rounded-xl"
       >
-        <img src={"./logo.svg"} alt="logo" className="m-auto mt-5" />
+        <img
+          src={"./logo.svg"}
+          alt="logo"
+          className="m-auto mt-5"
+          onClick={() => navigate("/login")}
+        />
         <Menu
           mode="inline"
           defaultSelectedKeys={["1"]}
@@ -32,23 +67,16 @@ const HomePage = () => {
               key: "1",
               label: "Data",
               icon: <FileOutlined />,
-              children: [
-                {
-                  key: "1-1",
-                  label: "calendar",
-                },
-                { key: "1-2", label: "Fleet" },
-                { key: "1-3", label: "Order", onClick: () => {} },
-              ],
+              children: dataMenuItems,
             },
             {
               key: "2",
               label: "Result",
               icon: <ContainerOutlined />,
               children: [
-                { key: "1-1", label: "calendar" },
-                { key: "1-2", label: "Fleet" },
-                { key: "1-3", label: "Order" },
+                { key: "result-calendar", label: "Calendar" },
+                { key: "result-fleet", label: "Fleet" },
+                { key: "result-order", label: "Order" },
               ],
             },
             {
@@ -56,9 +84,9 @@ const HomePage = () => {
               label: "Live",
               icon: <FieldTimeOutlined />,
               children: [
-                { key: "1-1", label: "calendar" },
-                { key: "1-2", label: "Fleet" },
-                { key: "1-3", label: "Order" },
+                { key: "live-calendar", label: "Calendar" },
+                { key: "live-fleet", label: "Fleet" },
+                { key: "live-order", label: "Order" },
               ],
             },
             {
@@ -66,9 +94,9 @@ const HomePage = () => {
               label: "Analytics",
               icon: <BarChartOutlined />,
               children: [
-                { key: "1-1", label: "calendar" },
-                { key: "1-2", label: "Fleet" },
-                { key: "1-3", label: "Order" },
+                { key: "analytics-calendar", label: "Calendar" },
+                { key: "analytics-fleet", label: "Fleet" },
+                { key: "analytics-order", label: "Order" },
               ],
             },
             {
@@ -76,9 +104,9 @@ const HomePage = () => {
               label: "Administration",
               icon: <UserOutlined />,
               children: [
-                { key: "1-1", label: "calendar" },
-                { key: "1-2", label: "Fleet" },
-                { key: "1-3", label: "Order" },
+                { key: "administration-calendar", label: "Calendar" },
+                { key: "administration-fleet", label: "Fleet" },
+                { key: "administration-order", label: "Order" },
               ],
             },
           ]}
@@ -98,9 +126,11 @@ const HomePage = () => {
         </Header>
         <Content>
           <Map />
+          <CustomDialog />
         </Content>
-        <Footer style={{ background: "#FFFFFF" }}>
-          <CustomTable />
+        <Footer style={{ background: "#FFFFFF", padding: 0 }}>
+          {menue == "data-order" && <OrderTable />}
+          {menue == "data-fleet" && <FleetTable />}
         </Footer>
       </Layout>
     </Layout>

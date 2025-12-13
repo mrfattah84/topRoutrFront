@@ -3,9 +3,11 @@ import { Button } from "antd";
 import React from "react";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
+import { useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
   const [login, setLogin] = React.useState(true);
+  const navigate = useNavigate();
 
   function toggleLogin() {
     setLogin(!login);
@@ -22,7 +24,11 @@ const RegisterPage = () => {
             <Button variant="link" color="primary" size="large">
               <div className="text-l font-bold"> Contact us</div>
             </Button>
-            <Button type="link" shape="circle">
+            <Button
+              type="link"
+              shape="circle"
+              onClick={() => navigate("/home")}
+            >
               <img src={"./logo.svg"} alt="logo" className="w-10" />
             </Button>
           </div>

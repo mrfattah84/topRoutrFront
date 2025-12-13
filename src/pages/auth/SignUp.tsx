@@ -39,7 +39,7 @@ const SignUp = ({ toggle }) => {
   };
 
   return (
-    <div className="w-1/3 -mt-5 px-14 py-9 bg-[#f3f3f3]/50 rounded-2xl flex flex-col gap-4">
+    <div className="w-1/3 -mt-9 px-9 py-7 bg-[#f3f3f3]/50 rounded-2xl flex flex-col gap-2">
       <div className="text-2xl font-medium">Create an account</div>
       <div className="flex gap-2">
         <div>
@@ -65,30 +65,32 @@ const SignUp = ({ toggle }) => {
           />
         </div>
       </div>
-      <div>
-        <label>phone</label>
-        <Input
-          value={phone}
-          className="bg-transparent! border-2! border-[#D1E9FF]! "
-          placeholder="09123456789"
-          onChange={(e) => {
-            setPhone(e.target.value);
-          }}
-        />
-      </div>
-      <div className="flex flex-col">
-        <label>role</label>
-        <Select
-          value={role}
-          onChange={(e) => {
-            setRole(e);
-          }}
-          options={[
-            { value: "driver", label: "Driver" },
-            { value: "logistic", label: "Logistic" },
-            { value: "manager", label: "Manager" },
-          ]}
-        />
+      <div className="flex gap-2">
+        <div>
+          <label>phone</label>
+          <Input
+            value={phone}
+            className="bg-transparent! border-2! border-[#D1E9FF]! "
+            placeholder="09123456789"
+            onChange={(e) => {
+              setPhone(e.target.value);
+            }}
+          />
+        </div>
+        <div className="flex flex-col w-1/2">
+          <label>role</label>
+          <Select
+            value={role}
+            onChange={(e) => {
+              setRole(e);
+            }}
+            options={[
+              { value: "driver", label: "Driver" },
+              { value: "logistic", label: "Logistic" },
+              { value: "manager", label: "Manager" },
+            ]}
+          />
+        </div>
       </div>
       <div>
         <label>Email</label>

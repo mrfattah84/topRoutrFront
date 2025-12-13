@@ -86,7 +86,7 @@ const SignIn = ({ toggle }) => {
   };
 
   return (
-    <div className="w-1/3 mt-[10dvh] px-14 py-9 bg-[#f3f3f3]/50 rounded-2xl flex flex-col gap-4">
+    <div className="w-1/3 mt-[2dvh] px-14 py-9 bg-[#f3f3f3]/50 rounded-2xl flex flex-col gap-4">
       {step === 0 ? (
         <>
           <div className="text-2xl font-medium">Login</div>
