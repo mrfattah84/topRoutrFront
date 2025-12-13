@@ -2,10 +2,10 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const dialogSlice = createSlice({
   name: "dialog",
-  initialState: { SidebarMenue: "", form: "" },
+  initialState: { sidebarMenue: "", form: "" },
   reducers: {
     setSidebarMenue: (state, action) => {
-      state.SidebarMenue = action.payload;
+      state.sidebarMenue = action.payload;
     },
     setForm: (state, action) => {
       state.form = action.payload;
