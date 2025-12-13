@@ -45,6 +45,7 @@ const Calendar: FC<CalendarProps> = ({
   onMonthChange,
   selectedDate: externalSelectedDate,
   disablePast = true,
+  className = "",
 }) => {
   const today = jalaali.toJalaali(new Date());
   const [currentYear, setCurrentYear] = useState(today.jy);
@@ -143,7 +144,7 @@ const Calendar: FC<CalendarProps> = ({
   const years = Array.from({ length: 25 }, (_, i) => today.jy - 12 + i);
 
   return (
-    <div className="flex gap-2 h-full">
+    <div className={"flex gap-2 h-full " + className}>
       {/* Main Calendar */}
       <div className="w-[400px] h-[400px] p-6 bg-gray-50 rounded-xl flex flex-col">
         {/* Header */}
