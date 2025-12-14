@@ -2,10 +2,14 @@ import { Button, Modal } from "antd";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  resetDialog,
   selectCurrentForm,
   selectCurrentSidebarMenue,
+  selectIsSubmitting,
+  selectSubmitSuccess,
   setForm,
   setSidebarMenue,
+  triggerSubmit,
 } from "./dialogSlice";
 import Calendar from "../data/Calendar";
 import AddOrder from "./forms/order/AddOrder";
@@ -24,6 +28,8 @@ const CustomDialog = () => {
 
   const menue = useSelector(selectCurrentSidebarMenue);
   const form = useSelector(selectCurrentForm);
+  const isSubmitting = useSelector(selectIsSubmitting);
+  const submitSuccess = useSelector(selectSubmitSuccess);
 
   const dispatch = useDispatch();
 
@@ -38,26 +44,27 @@ const CustomDialog = () => {
     }
   }, [menue, form, dispatch]);
 
+  useEffect(() => {
+    if (submitSuccess) {
+      setTimeout(() => {
+        setOpen(false);
+        dispatch(resetDialog());
+      }, 500);
+    }
+  }, [submitSuccess, dispatch]);
+
   const handleDateSelect = (date, jalaali) => {
     setSelectedDate(jalaali);
     console.log(`Selected: ${jalaali.jd}/${jalaali.jm}/${jalaali.jy}`);
   };
 
-  const closeModal = () => {
-    setOpen(false);
-    dispatch(setForm(""));
-  };
-
   const handleOk = () => {
-    setConfirmLoading(true);
-    setTimeout(() => {
-      closeModal();
-      setConfirmLoading(false);
-    }, 2000);
+    dispatch(triggerSubmit());
   };
 
   const handleCancel = () => {
-    closeModal();
+    setOpen(false);
+    dispatch(resetDialog());
   };
 
   // Function to render the appropriate content based on menue and form
@@ -123,7 +130,7 @@ const CustomDialog = () => {
       title={getModalTitle()}
       open={open}
       onOk={handleOk}
-      confirmLoading={confirmLoading}
+      confirmLoading={isSubmitting}
       onCancel={handleCancel}
     >
       {renderModalContent()}
