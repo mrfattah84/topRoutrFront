@@ -11,7 +11,7 @@ import {
   setSidebarMenue,
   triggerSubmit,
 } from "./dialogSlice";
-import Calendar from "../data/Calendar";
+import Calendar from "../../components/Calendar";
 import AddOrder from "./forms/order/AddOrder";
 import EditOrder from "./forms/order/EditOrder";
 import AddFleet from "./forms/fleet/AddFleet";

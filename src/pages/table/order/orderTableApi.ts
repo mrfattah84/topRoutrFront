@@ -1,18 +1,12 @@
-import { apiSlice } from "./baseApi";
+import { apiSlice } from "../../../api";
 
 export const orderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getOrders: builder.query({
+      providesTags: ["Order"],
       query: () => ({
         url: "/orders",
       }),
-      providesTags: (result = []) => [
-        ...result.map(({ id }) => ({ type: "Order" as const, id })),
-        {
-          type: "Order",
-          id: "LIST",
-        },
-      ],
     }),
   }),
 });

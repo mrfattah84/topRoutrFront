@@ -3,13 +3,16 @@ import { table } from "console";
 
 const tableSlice = createSlice({
   name: "table",
-  initialState: {tableData: [], tableColumns: []},
+  initialState: { tableData: [], tableColumns: [] },
   reducers: {
     setTableData: (state, action) => {
       state.tableData = action.payload;
     },
     setTableColumns: (state, action) => {
       state.tableColumns = action.payload;
+    },
+    selectCurrentUser: (state, action) => {
+      return state.user;
     },
   },
 });

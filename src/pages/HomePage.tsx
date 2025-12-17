@@ -8,10 +8,10 @@ import {
   PhoneOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import Map from "../components/Map";
+import Map from "./map/Map";
 import { useNavigate } from "react-router-dom";
-import OrderTable from "./table/OrderTable";
-import FleetTable from "./table/FleetTable";
+import OrderTable from "./table/order/OrderTable";
+import FleetTable from "./table/fleet/FleetTable";
 import CustomDialog from "./formDialog/CustomDialog";
 import { useDispatch, useSelector } from "react-redux";
 import {

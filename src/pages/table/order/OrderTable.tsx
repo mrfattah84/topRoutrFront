@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
-import { Button, Flex, Space, Table, Tag } from "antd";
-import { useGetOrdersQuery } from "../../api/orderApiSlice";
-import { setForm } from "../formDialog/dialogSlice";
+import { Button, Flex, Space, Switch, Table, Tag } from "antd";
+import { useGetOrdersQuery } from "./orderTableApi";
+import { setForm } from "../../formDialog/dialogSlice";
 import { useDispatch } from "react-redux";
 
 const columns = [
@@ -20,22 +20,18 @@ const columns = [
   },
   {
     title: "Actives",
-    dataIndex: "activated",
+    dataIndex: "is_active",
     key: "activated",
     render: (_, record) => (
       <label className="toggle-switch">
-        <input
-          type="checkbox"
-          checked={record.activated}
-          ///onChange={() => toggleActive(record.id)}
-        />
+        <Switch checked={record.is_active} onChange={() => {}} />
         <span className="toggle-slider"></span>
       </label>
     ),
   },
   {
     title: "Order ID",
-    dataIndex: "orderId",
+    dataIndex: "id",
     key: "orderId",
   },
   {
@@ -60,80 +56,62 @@ const columns = [
   },
   {
     title: "Result Status",
-    dataIndex: "resultStatus",
+    dataIndex: "result_status",
     key: "resultStatus",
   },
   {
     title: "Live Status",
-    dataIndex: "liveStatus",
+    dataIndex: "live_status",
     key: "liveStatus",
   },
   {
     title: "Daily Status",
-    dataIndex: "dailyStatus",
+    dataIndex: "daily_status",
     key: "dailyStatus",
   },
   {
-    title: "Order Type",
-    dataIndex: "orderType",
-    key: "orderType",
-  },
-  {
-    title: "Shipment Type",
-    dataIndex: "shipmentType",
-    key: "shipmentType",
-  },
-  {
-    title: "Assignment",
-    dataIndex: "assignment",
-    key: "assignment",
-  },
-  {
     title: "Source Address",
-    dataIndex: "sourceAddress",
+    dataIndex: "source",
     key: "sourceAddress",
+    render: (_, record) => <div>{record.title}</div>,
   },
   {
     title: "Destination Address",
-    dataIndex: "destinationAddress",
+    dataIndex: "destination",
     key: "destinationAddress",
+    render: (_, record) => <div>{record.title}</div>,
   },
   {
     title: "Source Verified",
-    dataIndex: "sourceVerified",
+    dataIndex: "source_verified",
     key: "sourceVerified",
     ///render: (status) => <VerificationBadge status={status} />,
   },
   {
     title: "Destination Verified",
-    dataIndex: "destinationVerified",
+    dataIndex: "destination_verified",
     key: "destinationVerified",
     ///render: (status) => <VerificationBadge status={status} />,
   },
   {
     title: "Order Date",
-    dataIndex: "orderDate",
+    dataIndex: "created_at",
     key: "orderDate",
   },
   {
     title: "Delivery Date",
-    dataIndex: "deliveryDate",
+    dataIndex: "delivery_date",
     key: "deliveryDate",
   },
   {
     title: "Delivery Time From",
-    dataIndex: "deliveryTimeFrom",
+    dataIndex: "delivery_time_from",
     key: "deliveryTimeFrom",
   },
   {
     title: "Delivery Time To",
-    dataIndex: "deliveryTimeTo",
+    dataIndex: "delivery_time_to",
     key: "deliveryTimeTo",
-  },
-  {
-    title: "Delivery Time Actual",
-    dataIndex: "deliveryTimeActual",
-    key: "deliveryTimeActual",
   },
   {
     title: "Quantity",
@@ -141,65 +119,31 @@ const columns = [
     key: "quantity",
   },
   {
-    title: "Volume",
-    dataIndex: "volume",
-    key: "volume",
-  },
-  {
-    title: "Weight",
-    dataIndex: "weight",
-    key: "weight",
-  },
-  {
-    title: "Length",
-    dataIndex: "length",
-    key: "length",
-  },
-  {
-    title: "Width",
-    dataIndex: "width",
-    key: "width",
-  },
-  {
-    title: "Height",
-    dataIndex: "height",
-    key: "height",
-  },
-  {
     title: "Price",
     dataIndex: "price",
     key: "price",
   },
   {
-    title: "Box Value",
-    dataIndex: "boxValue",
-    key: "boxValue",
+    title: "Vehicle",
+    dataIndex: "assigned_to_name",
+    key: "vehicle",
   },
   {
-    title: "Limit # Orders",
-    dataIndex: "limitNumberOfOrders",
-    key: "limitNumberOfOrders",
+    title: "Scheduled Driver",
+    dataIndex: "driver_name",
+    key: "scheduledDriver",
   },
   {
-    title: "Vehicles",
-    dataIndex: "vehicles",
-    key: "vehicles",
-  },
-  {
-    title: "Scheduled Drivers",
-    dataIndex: "scheduledDrivers",
-    key: "scheduledDrivers",
-  },
-  {
-    title: "Cluster ID",
-    dataIndex: "clusterId",
-    key: "clusterId",
+    title: "Vehicle Plate",
+    dataIndex: "vehicle_plate",
+    key: "vehiclePlate",
   },
 ];
 
-const FleetTable = () => {
+const OrderTable = () => {
   const { data, isLoading } = useGetOrdersQuery();
   const dispatch = useDispatch();
+
 
   return (
     <div className="relative">
@@ -234,4 +178,4 @@ const FleetTable = () => {
   );
 };
 
-export default FleetTable;
+export default OrderTable;

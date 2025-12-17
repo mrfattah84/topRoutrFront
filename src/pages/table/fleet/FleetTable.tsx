@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Button, Flex, Space, Table, Tag } from "antd";
-import { useGetOrdersQuery } from "../../api/orderApiSlice";
-import { setForm } from "../formDialog/dialogSlice";
+import { useGetFleetsQuery } from "./fleetTableApi";
+import { setForm } from "../../formDialog/dialogSlice";
 import { useDispatch } from "react-redux";
 
 const columns = [
@@ -197,8 +197,8 @@ const columns = [
   },
 ];
 
-const OrderTable = () => {
-  const { data, isLoading } = useGetOrdersQuery();
+const FleetTable = () => {
+  const { data, isLoading } = useGetFleetsQuery();
   const dispatch = useDispatch();
 
   return (
@@ -234,4 +234,4 @@ const OrderTable = () => {
   );
 };
 
-export default OrderTable;
+export default FleetTable;

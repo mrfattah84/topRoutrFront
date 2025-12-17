@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
 import { setCredentials, selectCurrentToken } from "./authSlice";
-import { useLoginMutation, useOtpMutation } from "../../api/authApiSlice";
+import { useLoginMutation, useOtpMutation } from "./authApi";
 import { store } from "../../store";
 
 const SignIn = ({ toggle }) => {

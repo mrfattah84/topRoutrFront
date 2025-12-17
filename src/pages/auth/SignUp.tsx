@@ -1,7 +1,7 @@
 import { GoogleOutlined } from "@ant-design/icons";
 import { Input, Button, Select } from "antd";
 import React from "react";
-import { useSignupMutation } from "../../api/authApiSlice";
+import { useSignupMutation } from "./authApi";
 import { useDispatch } from "react-redux";
 
 const SignUp = ({ toggle }) => {
