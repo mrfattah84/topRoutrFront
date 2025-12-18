@@ -22,7 +22,15 @@ export const orderTableApi = apiSlice.injectEndpoints({
         body: { ...data },
       }),
     }),
+    changeActive: builder.mutation({
+      invalidatesTags: ["Order"],
+      query: ({ id, activated }) => ({
+        url: `orders/${id}/`,
+        method: "PATCH",
+        body: { activated },
+      }),
+    }),
   }),
 });
 
-export const { useGetOrdersQuery } = orderTableApi;
+export const { useGetOrdersQuery, useChangeActiveMutation } = orderTableApi;

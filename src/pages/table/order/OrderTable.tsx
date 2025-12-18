@@ -4,145 +4,11 @@ import { useGetOrdersQuery } from "./orderTableApi";
 import { setForm } from "../../formDialog/dialogSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { selectedRowKeys, setSelectedRowKeys } from "./orderTableSlice";
-
-const columns = [
-  {
-    title: "All",
-    dataIndex: "selection",
-    key: "selection",
-    render: (_, record) => (
-      <input
-        type="checkbox"
-        ///checked={selectedRows.has(record.id)}
-        ///onChange={() => toggleSelectRow(record.id)}
-        className="table-checkbox"
-      />
-    ),
-  },
-  {
-    title: "Actives",
-    dataIndex: "is_active",
-    key: "activated",
-    render: (_, record) => (
-      <label className="toggle-switch">
-        <Switch checked={record.is_active} onChange={() => {}} />
-        <span className="toggle-slider"></span>
-      </label>
-    ),
-  },
-  {
-    title: "Order ID",
-    dataIndex: "id",
-    key: "orderId",
-  },
-  {
-    title: "Title",
-    dataIndex: "title",
-    key: "title",
-  },
-  {
-    title: "Code",
-    dataIndex: "code",
-    key: "code",
-  },
-  {
-    title: "Priority",
-    dataIndex: "priority",
-    key: "priority",
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    key: "status",
-  },
-  {
-    title: "Result Status",
-    dataIndex: "result_status",
-    key: "resultStatus",
-  },
-  {
-    title: "Live Status",
-    dataIndex: "live_status",
-    key: "liveStatus",
-  },
-  {
-    title: "Daily Status",
-    dataIndex: "daily_status",
-    key: "dailyStatus",
-  },
-  {
-    title: "Source Address",
-    dataIndex: "source",
-    key: "sourceAddress",
-    render: (_, record) => <div>{record.title}</div>,
-  },
-  {
-    title: "Destination Address",
-    dataIndex: "destination",
-    key: "destinationAddress",
-    render: (_, record) => <div>{record.title}</div>,
-  },
-  {
-    title: "Source Verified",
-    dataIndex: "source_verified",
-    key: "sourceVerified",
-    ///render: (status) => <VerificationBadge status={status} />,
-  },
-  {
-    title: "Destination Verified",
-    dataIndex: "destination_verified",
-    key: "destinationVerified",
-    ///render: (status) => <VerificationBadge status={status} />,
-  },
-  {
-    title: "Order Date",
-    dataIndex: "created_at",
-    key: "orderDate",
-  },
-  {
-    title: "Delivery Date",
-    dataIndex: "delivery_date",
-    key: "deliveryDate",
-  },
-  {
-    title: "Delivery Time From",
-    dataIndex: "delivery_time_from",
-    key: "deliveryTimeFrom",
-  },
-  {
-    title: "Delivery Time To",
-    dataIndex: "delivery_time_to",
-    key: "deliveryTimeTo",
-  },
-  {
-    title: "Quantity",
-    dataIndex: "quantity",
-    key: "quantity",
-  },
-  {
-    title: "Price",
-    dataIndex: "price",
-    key: "price",
-  },
-  {
-    title: "Vehicle",
-    dataIndex: "assigned_to_name",
-    key: "vehicle",
-  },
-  {
-    title: "Scheduled Driver",
-    dataIndex: "driver_name",
-    key: "scheduledDriver",
-  },
-  {
-    title: "Vehicle Plate",
-    dataIndex: "vehicle_plate",
-    key: "vehiclePlate",
-  },
-];
+import { useChangeActiveMutation } from "./orderTableApi";
 
 const OrderTable = () => {
   const { data, isLoading } = useGetOrdersQuery();
+  const [changeActive] = useChangeActiveMutation();
   const dispatch = useDispatch();
   const rows = useSelector(selectedRowKeys);
   const rowSelection = {
@@ -151,6 +17,140 @@ const OrderTable = () => {
       dispatch(setSelectedRowKeys(rows));
     },
   };
+
+  const columns = [
+    {
+      title: "Actives",
+      dataIndex: "activated",
+      key: "activated",
+      render: (_, record) => (
+        <label className="toggle-switch">
+          <Switch
+            checked={record.activated}
+            onChange={() => {
+              changeActive({ id: record.id, activated: !record.activated });
+            }}
+          />
+          <span className="toggle-slider"></span>
+        </label>
+      ),
+    },
+    {
+      title: "Order ID",
+      dataIndex: "id",
+      key: "orderId",
+    },
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+    },
+    {
+      title: "Code",
+      dataIndex: "code",
+      key: "code",
+    },
+    {
+      title: "Priority",
+      dataIndex: "priority",
+      key: "priority",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+    },
+    {
+      title: "Result Status",
+      dataIndex: "result_status",
+      key: "resultStatus",
+    },
+    {
+      title: "Live Status",
+      dataIndex: "live_status",
+      key: "liveStatus",
+    },
+    {
+      title: "Daily Status",
+      dataIndex: "daily_status",
+      key: "dailyStatus",
+    },
+    {
+      title: "Source Address",
+      dataIndex: "source",
+      key: "sourceAddress",
+      render: (record) => {
+        return record?.title || "";
+      },
+    },
+    {
+      title: "Destination Address",
+      dataIndex: "destination",
+      key: "destinationAddress",
+      render: (record) => {
+        return record?.title || "";
+      },
+    },
+    {
+      title: "Source Verified",
+      dataIndex: "source_verified",
+      key: "sourceVerified",
+      ///render: (status) => <VerificationBadge status={status} />,
+    },
+    {
+      title: "Destination Verified",
+      dataIndex: "destination_verified",
+      key: "destinationVerified",
+      ///render: (status) => <VerificationBadge status={status} />,
+    },
+    {
+      title: "Order Date",
+      dataIndex: "created_at",
+      key: "orderDate",
+    },
+    {
+      title: "Delivery Date",
+      dataIndex: "delivery_date",
+      key: "deliveryDate",
+    },
+    {
+      title: "Delivery Time From",
+      dataIndex: "delivery_time_from",
+      key: "deliveryTimeFrom",
+    },
+    {
+      title: "Delivery Time To",
+      dataIndex: "delivery_time_to",
+      key: "deliveryTimeTo",
+    },
+    {
+      title: "Quantity",
+      dataIndex: "quantity",
+      key: "quantity",
+    },
+    {
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+    },
+    {
+      title: "Vehicle",
+      dataIndex: "assigned_to_name",
+      key: "vehicle",
+    },
+    {
+      title: "Scheduled Driver",
+      dataIndex: "driver_name",
+      key: "scheduledDriver",
+    },
+    {
+      title: "Vehicle Plate",
+      dataIndex: "vehicle_plate",
+      key: "vehiclePlate",
+    },
+  ];
+
+  console.log(data);
 
   return (
     <div className="relative">
