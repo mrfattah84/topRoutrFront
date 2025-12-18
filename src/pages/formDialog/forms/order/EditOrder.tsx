@@ -19,12 +19,7 @@ import Calendar from "../../../../components/Calendar";
 import AddAddress from "../AddAddress";
 import AddressSelector from "./AddressSelector";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  resetSubmit,
-  selectShouldSubmit,
-  setSubmitSuccess,
-  setSubmitting,
-} from "../../dialogSlice";
+import {} from "../../dialogSlice";
 
 const EditOrder = () => {
   const [showCalendar, setShowCalendar] = useState(false);
@@ -34,7 +29,6 @@ const EditOrder = () => {
 
   const [form] = Form.useForm();
   const dispatch = useDispatch();
-  const shouldSubmit = useSelector(selectShouldSubmit);
 
   const format = "HH:mm:ss";
 
@@ -79,7 +73,6 @@ const EditOrder = () => {
     } else {
       try {
         await form.validateFields();
-        dispatch(setSubmitting(true));
 
         const allFormData = form.getFieldsValue(true);
 
@@ -108,21 +101,11 @@ const EditOrder = () => {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         setStep(0);
-        dispatch(setSubmitting(false));
-        dispatch(setSubmitSuccess(true));
       } catch (error) {
         console.error("Form validation failed:", error);
-        dispatch(setSubmitting(false));
       }
     }
   };
-
-  useEffect(() => {
-    if (shouldSubmit) {
-      handleSubmit();
-      dispatch(resetSubmit());
-    }
-  }, [shouldSubmit, dispatch]);
 
   return (
     <Form layout="vertical" form={form}>

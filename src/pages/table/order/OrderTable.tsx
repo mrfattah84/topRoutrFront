@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Flex, Space, Switch, Table, Tag } from "antd";
 import { useGetOrdersQuery } from "./orderTableApi";
 import { setForm } from "../../formDialog/dialogSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { selectedRowKeys, setSelectedRowKeys } from "./orderTableSlice";
 
 const columns = [
   {
@@ -143,7 +144,13 @@ const columns = [
 const OrderTable = () => {
   const { data, isLoading } = useGetOrdersQuery();
   const dispatch = useDispatch();
-
+  const rows = useSelector(selectedRowKeys);
+  const rowSelection = {
+    rows,
+    onChange: (rows) => {
+      dispatch(setSelectedRowKeys(rows));
+    },
+  };
 
   return (
     <div className="relative">
@@ -168,6 +175,7 @@ const OrderTable = () => {
         </Button>
       </div>
       <Table
+        rowSelection={rowSelection}
         columns={columns}
         dataSource={data}
         loading={isLoading}

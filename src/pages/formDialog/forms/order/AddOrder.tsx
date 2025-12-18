@@ -19,24 +19,20 @@ import Calendar from "../../../../components/Calendar";
 import AddAddress from "../AddAddress";
 import AddressSelector from "./AddressSelector";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  resetSubmit,
-  selectShouldSubmit,
-  setSubmitSuccess,
-  setSubmitting,
-} from "../../dialogSlice";
+import { setForm } from "../../dialogSlice";
+import { useCreateOrderMutation } from "./orderApi";
 
 const AddOrder = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [step, setStep] = useState(0);
   const [showAddOrigin, setShowAddOrigin] = useState(false);
   const [showAddDestination, setShowAddDestination] = useState(false);
+  const [createOrder, { isLoading }] = useCreateOrderMutation();
 
   const [form] = Form.useForm();
   const dispatch = useDispatch();
-  const shouldSubmit = useSelector(selectShouldSubmit);
 
-  const format = "HH:mm:ss";
+  const format = "HH:mm";
 
   const handleSubmit = async () => {
     if (step === 0) {
@@ -62,7 +58,6 @@ const AddOrder = () => {
         await form.validateFields();
 
         // Set loading state
-        dispatch(setSubmitting(true));
 
         // Get all form values
         const allFormData = form.getFieldsValue(true);
@@ -70,12 +65,13 @@ const AddOrder = () => {
         // Format the data for better readability
         const formattedData = {
           // Step 0 data
-          date: allFormData.date,
-          originLocation: allFormData.originLocation,
-          destinationLocation: allFormData.destinationLocation,
+          title: allFormData.title,
+          order_date: `${allFormData.date.jy}-${allFormData.date.jm}-${allFormData.date.jd}`,
+          source_id: allFormData.originLocation,
+          destination_id: allFormData.destinationLocation,
           volume: allFormData.volume,
           quantity: allFormData.quantity,
-          limitNumberOfOrders: allFormData.limitNumberOfOrders,
+          limit_number_of_orders: allFormData.limitNumberOfOrders,
           description: allFormData.description,
 
           // Step 1 data
@@ -84,8 +80,9 @@ const AddOrder = () => {
           width: allFormData.width,
           height: allFormData.height,
           priority: allFormData.priority,
-          timeWindows: allFormData.times,
-          orderType: allFormData.orderType,
+          delivery_time_from: `${allFormData.times[0].time[0].hour()}:${allFormData.times[0].time[0].minute()}`,
+          delivery_time_to: `${allFormData.times[0].time[1].hour()}:${allFormData.times[0].time[1].minute()}`,
+          order_type: allFormData.orderType,
         };
 
         // Console log all collected data
@@ -94,33 +91,31 @@ const AddOrder = () => {
         console.log("Raw Form Data:", allFormData);
         console.log("============================");
 
-        // Simulate API call (replace with your actual API call)
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // Call the mutation API
+        const result = await createOrder(formattedData).unwrap();
+        console.log("API Response:", result);
 
         // On success
+        dispatch(setForm(""));
         setStep(0);
         form.resetFields();
-        dispatch(setSubmitting(false));
-        dispatch(setSubmitSuccess(true));
       } catch (error) {
-        // On error
         console.error("Form validation failed:", error);
-        dispatch(setSubmitting(false));
       }
     }
   };
 
-  useEffect(() => {
-    if (shouldSubmit) {
-      handleSubmit();
-      dispatch(resetSubmit());
-    }
-  }, [shouldSubmit, dispatch]);
-
   return (
-    <Form layout="vertical" form={form}>
+    <Form layout="vertical" form={form} onSubmitCapture={handleSubmit}>
       {step === 0 ? (
         <>
+          <Form.Item
+            label="Title"
+            name="title"
+            rules={[{ required: true, message: "Please enter title" }]}
+          >
+            <Input style={{ width: "100%" }} placeholder="Enter title" />
+          </Form.Item>
           <Form.Item
             label="Date"
             rules={[{ required: true, message: "Please select a date" }]}
@@ -328,7 +323,10 @@ const AddOrder = () => {
                           },
                         ]}
                       >
-                        <TimePicker.RangePicker format={format} />
+                        <TimePicker.RangePicker
+                          format={format}
+                          minuteStep={15}
+                        />
                       </Form.Item>
                       <MinusCircleOutlined onClick={() => remove(name)} />
                     </Space>
@@ -355,14 +353,31 @@ const AddOrder = () => {
             <Select
               placeholder="select order type"
               options={[
+                { value: "standard", label: "Standard" },
+                { value: "express", label: "Express" },
+                { value: "scheduled", label: "Scheduled" },
+                { value: "pickup", label: "Pickup" },
                 { value: "delivery", label: "Delivery" },
-                { value: "pickUp", label: "Pick up" },
-                { value: "service", label: "Service" },
               ]}
             />
           </Form.Item>
         </>
       )}
+      <Form.Item style={{ textAlign: "end" }}>
+        <Space>
+          <Button
+            htmlType="button"
+            onClick={() => {
+              setStep(0);
+            }}
+          >
+            back
+          </Button>
+          <Button type="primary" htmlType="submit" loading={isLoading}>
+            {step == 0 ? "Next" : "Submit"}
+          </Button>
+        </Space>
+      </Form.Item>
     </Form>
   );
 };

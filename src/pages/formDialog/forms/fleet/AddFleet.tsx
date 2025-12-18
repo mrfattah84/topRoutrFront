@@ -5,12 +5,7 @@ import Calendar from "../../../../components/Calendar";
 import AddAddress from "../AddAddress";
 import AddressSelector from "../order/AddressSelector";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  resetSubmit,
-  selectShouldSubmit,
-  setSubmitSuccess,
-  setSubmitting,
-} from "../../dialogSlice";
+import {} from "../../dialogSlice";
 
 const AddFleet = () => {
   const [showCalendar, setShowCalendar] = useState(false);
@@ -19,7 +14,6 @@ const AddFleet = () => {
 
   const [form] = Form.useForm();
   const dispatch = useDispatch();
-  const shouldSubmit = useSelector(selectShouldSubmit);
 
   const handleSubmit = async () => {
     if (step === 0) {
@@ -41,7 +35,6 @@ const AddFleet = () => {
       // Final submission
       try {
         await form.validateFields();
-        dispatch(setSubmitting(true));
 
         const allFormData = form.getFieldsValue(true);
 
@@ -78,21 +71,11 @@ const AddFleet = () => {
         // On success
         setStep(0);
         form.resetFields();
-        dispatch(setSubmitting(false));
-        dispatch(setSubmitSuccess(true));
       } catch (error) {
         console.error("Form validation failed:", error);
-        dispatch(setSubmitting(false));
       }
     }
   };
-
-  useEffect(() => {
-    if (shouldSubmit) {
-      handleSubmit();
-      dispatch(resetSubmit());
-    }
-  }, [shouldSubmit, dispatch]);
 
   return (
     <Form layout="vertical" form={form}>

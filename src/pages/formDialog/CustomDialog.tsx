@@ -1,15 +1,11 @@
-import { Button, Modal } from "antd";
+import { Modal } from "antd";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  resetDialog,
   selectCurrentForm,
   selectCurrentSidebarMenue,
-  selectIsSubmitting,
-  selectSubmitSuccess,
   setForm,
   setSidebarMenue,
-  triggerSubmit,
 } from "./dialogSlice";
 import Calendar from "../../components/Calendar";
 import AddOrder from "./forms/order/AddOrder";
@@ -23,13 +19,10 @@ import ImportOrder from "./forms/order/ImportOrder";
 
 const CustomDialog = () => {
   const [open, setOpen] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
   const menue = useSelector(selectCurrentSidebarMenue);
   const form = useSelector(selectCurrentForm);
-  const isSubmitting = useSelector(selectIsSubmitting);
-  const submitSuccess = useSelector(selectSubmitSuccess);
 
   const dispatch = useDispatch();
 
@@ -41,30 +34,19 @@ const CustomDialog = () => {
       dispatch(setSidebarMenue(""));
     } else if (menue && form) {
       setOpen(true);
+    } else if (menue && !form) {
+      setOpen(false);
     }
   }, [menue, form, dispatch]);
-
-  useEffect(() => {
-    if (submitSuccess) {
-      setTimeout(() => {
-        setOpen(false);
-        dispatch(resetDialog());
-      }, 500);
-    }
-  }, [submitSuccess, dispatch]);
 
   const handleDateSelect = (date, jalaali) => {
     setSelectedDate(jalaali);
     console.log(`Selected: ${jalaali.jd}/${jalaali.jm}/${jalaali.jy}`);
   };
 
-  const handleOk = () => {
-    dispatch(triggerSubmit());
-  };
-
   const handleCancel = () => {
     setOpen(false);
-    dispatch(resetDialog());
+    dispatch(setForm(""));
   };
 
   // Function to render the appropriate content based on menue and form
@@ -129,8 +111,7 @@ const CustomDialog = () => {
     <Modal
       title={getModalTitle()}
       open={open}
-      onOk={handleOk}
-      confirmLoading={isSubmitting}
+      footer={null}
       onCancel={handleCancel}
     >
       {renderModalContent()}

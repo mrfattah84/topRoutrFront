@@ -3,10 +3,7 @@ import { Alert, Button, Form, Upload, Select, Divider } from "antd";
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
-  resetSubmit,
-  selectShouldSubmit,
-  setSubmitSuccess,
-  setSubmitting,
+
 } from "../../dialogSlice";
 import type { UploadFile } from "antd/es/upload/interface";
 
@@ -15,13 +12,11 @@ const { Dragger } = Upload;
 const ImportOrder = () => {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
-  const shouldSubmit = useSelector(selectShouldSubmit);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const handleSubmit = async () => {
     try {
       await form.validateFields();
-      dispatch(setSubmitting(true));
 
       const formData = form.getFieldsValue();
 
@@ -36,20 +31,13 @@ const ImportOrder = () => {
 
       form.resetFields();
       setFileList([]);
-      dispatch(setSubmitting(false));
-      dispatch(setSubmitSuccess(true));
+
     } catch (error) {
       console.error("Form validation failed:", error);
-      dispatch(setSubmitting(false));
+
     }
   };
 
-  useEffect(() => {
-    if (shouldSubmit) {
-      handleSubmit();
-      dispatch(resetSubmit());
-    }
-  }, [shouldSubmit, dispatch]);
 
   const uploadProps = {
     name: "file",
