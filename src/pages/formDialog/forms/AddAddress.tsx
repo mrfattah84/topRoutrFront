@@ -1,16 +1,27 @@
 import { Input, Row, Col, Button, Form, InputNumber } from "antd";
 import { useState } from "react";
 import LocationPicker from "../../../components/LocationPicker";
+import { useAddAddressMutation } from "./order/orderApi";
 
 const AddAddress = ({ setShowAddAddress }) => {
+  const [addAddress, { isLoading }] = useAddAddressMutation();
   const [lat, setLat] = useState(35.7448);
   const [lng, setLng] = useState(51.3753);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
 
   const handleAddressSubmit = () => {
-    console.log("addi submit", name, address, lat, lng);
+    addAddress({
+      title: name,
+      description: address,
+      latitude: lat,
+      longitude: lng,
+    });
     setShowAddAddress(false);
+    setAddress("");
+    setName("");
+    setLat(35.7448);
+    setLng(51.3753);
   };
 
   return (
@@ -89,6 +100,7 @@ const AddAddress = ({ setShowAddAddress }) => {
               variant="outlined"
               color="danger"
               onClick={() => setShowAddAddress(false)}
+              loading={isLoading}
             >
               Cancel
             </Button>

@@ -1,4 +1,5 @@
 import { apiSlice } from "../../../../api";
+import AddAddress from "../AddAddress";
 
 export const orderApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -35,7 +36,15 @@ export const orderApi = apiSlice.injectEndpoints({
       query: (data) => ({
         url: "orders/", // Ensure the URL has a trailing slash
         method: "POST",
-        body: { ...data },
+        body: data,
+      }),
+    }),
+    addAddress: builder.mutation({
+      invalidatesTags: ["Address"],
+      query: (data) => ({
+        url: "address/",
+        method: "POST",
+        body: data,
       }),
     }),
   }),
@@ -45,4 +54,5 @@ export const {
   useGetOrderQuery,
   useGetAddressesQuery,
   useCreateOrderMutation,
+  useAddAddressMutation
 } = orderApi;
