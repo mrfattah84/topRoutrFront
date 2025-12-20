@@ -9,17 +9,18 @@ import {
 } from "./dialogSlice";
 import Calendar from "../../components/Calendar";
 import AddOrder from "./forms/order/AddOrder";
-import EditOrder from "./forms/order/EditOrder";
 import AddFleet from "./forms/fleet/AddFleet";
-import DeleteOrder from "./forms/order/DeleteOrder";
 import DeleteFleet from "./forms/fleet/DeleteFleet";
 import EditFleet from "./forms/fleet/EditFleet";
 import ImportFleet from "./forms/fleet/ImportFleet";
 import ImportOrder from "./forms/order/ImportOrder";
 import { selectedRowKeys, setDate } from "../table/order/orderTableSlice";
+import { useDeleteOrderMutation } from "./forms/order/orderApi";
 
 const CustomDialog = () => {
   const [open, setOpen] = useState(false);
+
+  const [deleteOrder] = useDeleteOrderMutation();
 
   const menue = useSelector(selectCurrentSidebarMenue);
   const form = useSelector(selectCurrentForm);
@@ -94,7 +95,14 @@ const CustomDialog = () => {
             return null;
           }
         case "Delete":
-          return <DeleteOrder />;
+          if (selected?.payload?.length > 0 || false) {
+            deleteOrder(selected.payload[0]);
+            dispatch(setForm(""));
+            return null;
+          } else {
+            dispatch(setForm(""));
+            return null;
+          }
         case "Import":
           return <ImportOrder />;
         case "Export":
