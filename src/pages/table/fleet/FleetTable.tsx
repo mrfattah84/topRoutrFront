@@ -1,205 +1,115 @@
-import React, { useEffect } from "react";
-import { Button, Flex, Space, Table, Tag } from "antd";
-import { useGetFleetsQuery } from "./fleetTableApi";
+import React, { useEffect, useMemo } from "react";
+import { Button, Flex, Space, Switch, Table, Tag } from "antd";
+import {
+  useGetFleetsQuery,
+  useChangeFleetActiveMutation,
+} from "./fleetTableApi";
 import { setForm } from "../../formDialog/dialogSlice";
-import { useDispatch } from "react-redux";
-
-const columns = [
-  {
-    title: "All",
-    dataIndex: "selection",
-    key: "selection",
-    render: (_, record) => (
-      <input
-        type="checkbox"
-        ///checked={selectedRows.has(record.id)}
-        ///onChange={() => toggleSelectRow(record.id)}
-        className="table-checkbox"
-      />
-    ),
-  },
-  {
-    title: "Actives",
-    dataIndex: "activated",
-    key: "activated",
-    render: (_, record) => (
-      <label className="toggle-switch">
-        <input
-          type="checkbox"
-          checked={record.activated}
-          ///onChange={() => toggleActive(record.id)}
-        />
-        <span className="toggle-slider"></span>
-      </label>
-    ),
-  },
-  {
-    title: "Order ID",
-    dataIndex: "orderId",
-    key: "orderId",
-  },
-  {
-    title: "Title",
-    dataIndex: "title",
-    key: "title",
-  },
-  {
-    title: "Code",
-    dataIndex: "code",
-    key: "code",
-  },
-  {
-    title: "Priority",
-    dataIndex: "priority",
-    key: "priority",
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    key: "status",
-  },
-  {
-    title: "Result Status",
-    dataIndex: "resultStatus",
-    key: "resultStatus",
-  },
-  {
-    title: "Live Status",
-    dataIndex: "liveStatus",
-    key: "liveStatus",
-  },
-  {
-    title: "Daily Status",
-    dataIndex: "dailyStatus",
-    key: "dailyStatus",
-  },
-  {
-    title: "Order Type",
-    dataIndex: "orderType",
-    key: "orderType",
-  },
-  {
-    title: "Shipment Type",
-    dataIndex: "shipmentType",
-    key: "shipmentType",
-  },
-  {
-    title: "Assignment",
-    dataIndex: "assignment",
-    key: "assignment",
-  },
-  {
-    title: "Source Address",
-    dataIndex: "sourceAddress",
-    key: "sourceAddress",
-  },
-  {
-    title: "Destination Address",
-    dataIndex: "destinationAddress",
-    key: "destinationAddress",
-  },
-  {
-    title: "Source Verified",
-    dataIndex: "sourceVerified",
-    key: "sourceVerified",
-    ///render: (status) => <VerificationBadge status={status} />,
-  },
-  {
-    title: "Destination Verified",
-    dataIndex: "destinationVerified",
-    key: "destinationVerified",
-    ///render: (status) => <VerificationBadge status={status} />,
-  },
-  {
-    title: "Order Date",
-    dataIndex: "orderDate",
-    key: "orderDate",
-  },
-  {
-    title: "Delivery Date",
-    dataIndex: "deliveryDate",
-    key: "deliveryDate",
-  },
-  {
-    title: "Delivery Time From",
-    dataIndex: "deliveryTimeFrom",
-    key: "deliveryTimeFrom",
-  },
-  {
-    title: "Delivery Time To",
-    dataIndex: "deliveryTimeTo",
-    key: "deliveryTimeTo",
-  },
-  {
-    title: "Delivery Time Actual",
-    dataIndex: "deliveryTimeActual",
-    key: "deliveryTimeActual",
-  },
-  {
-    title: "Quantity",
-    dataIndex: "quantity",
-    key: "quantity",
-  },
-  {
-    title: "Volume",
-    dataIndex: "volume",
-    key: "volume",
-  },
-  {
-    title: "Weight",
-    dataIndex: "weight",
-    key: "weight",
-  },
-  {
-    title: "Length",
-    dataIndex: "length",
-    key: "length",
-  },
-  {
-    title: "Width",
-    dataIndex: "width",
-    key: "width",
-  },
-  {
-    title: "Height",
-    dataIndex: "height",
-    key: "height",
-  },
-  {
-    title: "Price",
-    dataIndex: "price",
-    key: "price",
-  },
-  {
-    title: "Box Value",
-    dataIndex: "boxValue",
-    key: "boxValue",
-  },
-  {
-    title: "Limit # Orders",
-    dataIndex: "limitNumberOfOrders",
-    key: "limitNumberOfOrders",
-  },
-  {
-    title: "Vehicles",
-    dataIndex: "vehicles",
-    key: "vehicles",
-  },
-  {
-    title: "Scheduled Drivers",
-    dataIndex: "scheduledDrivers",
-    key: "scheduledDrivers",
-  },
-  {
-    title: "Cluster ID",
-    dataIndex: "clusterId",
-    key: "clusterId",
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import AddressVerify from "../order/AddressVerify";
+import {
+  selectedRowKeys,
+  selectDate,
+  setSelectedRowKeys,
+} from "./fleetTableSlice";
 
 const FleetTable = () => {
   const { data, isLoading } = useGetFleetsQuery();
+  const [changeActive] = useChangeFleetActiveMutation();
   const dispatch = useDispatch();
+  const rows = useSelector(selectedRowKeys);
+  const date = useSelector(selectDate);
+  const rowSelection = {
+    rows,
+    onChange: (rows) => {
+      dispatch(setSelectedRowKeys(rows));
+    },
+  };
+
+  const columns = [
+    {
+      title: "Active",
+      dataIndex: "is_active",
+      key: "is_active",
+      render: (_, record) => (
+        <label className="toggle-switch">
+          <Switch
+            checked={record.is_active}
+            onChange={() => {
+              changeActive({ id: record.id, activated: !record.is_active });
+            }}
+          />
+          <span className="toggle-slider"></span>
+        </label>
+      ),
+    },
+    {
+      title: "license",
+      dataIndex: "license_plate",
+      key: "license_plate",
+    },
+    {
+      title: "label",
+      dataIndex: "label",
+      key: "label",
+    },
+    {
+      title: "Vehicles Features",
+      dataIndex: "priority",
+      key: "priority",
+    },
+    {
+      title: "weight",
+      dataIndex: "weight",
+      key: "weight",
+    },
+    {
+      title: "volume",
+      dataIndex: "volume",
+      key: "volume",
+    },
+    {
+      title: "serial number",
+      dataIndex: "serial_number",
+      key: "serial_number",
+      render: (record) => record?.split("T")[0],
+    },
+    {
+      title: "name",
+      dataIndex: "name",
+      key: "name",
+    },
+    {
+      title: "work hours",
+      dataIndex: "work_hours",
+      key: "work_hours",
+    },
+    {
+      title: "email",
+      dataIndex: "email",
+      key: "email",
+    },
+    {
+      title: "break",
+      dataIndex: "break_duration",
+      key: "break_duration",
+    },
+    {
+      title: "time window",
+      dataIndex: "time_window",
+      key: "time_window",
+    },
+  ];
+
+  const filteredData = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+    if (!date) {
+      return data;
+    }
+    return data.filter((item) => item.created_at === date);
+  }, [data, date]);
 
   return (
     <div className="relative">
@@ -224,8 +134,9 @@ const FleetTable = () => {
         </Button>
       </div>
       <Table
+        rowSelection={rowSelection}
         columns={columns}
-        dataSource={data}
+        dataSource={filteredData}
         loading={isLoading}
         pagination={{ placement: ["none", "none"] }}
         scroll={{ x: "max-content" }}
