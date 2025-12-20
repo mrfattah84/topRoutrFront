@@ -29,6 +29,20 @@ export const orderTableApi = apiSlice.injectEndpoints({
         method: "PATCH",
         body: { activated },
       }),
+      async onQueryStarted({ id, activated }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          orderTableApi.util.updateQueryData(
+            "getOrders",
+            undefined,
+            (draft) => {
+              const order = draft.find((order) => order.id === id);
+              if (order) {
+                order.activated = activated;
+              }
+            }
+          )
+        );
+      },
     }),
   }),
 });

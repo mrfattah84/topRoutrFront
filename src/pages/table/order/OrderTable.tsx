@@ -9,6 +9,7 @@ import {
   setSelectedRowKeys,
 } from "./orderTableSlice";
 import { useChangeActiveMutation } from "./orderTableApi";
+import AddressVerify from "./AddressVerify";
 
 const OrderTable = () => {
   const { data, isLoading } = useGetOrdersQuery();
@@ -25,7 +26,7 @@ const OrderTable = () => {
 
   const columns = [
     {
-      title: "Actives",
+      title: "Active",
       dataIndex: "activated",
       key: "activated",
       render: (_, record) => (
@@ -41,17 +42,12 @@ const OrderTable = () => {
       ),
     },
     {
-      title: "Order ID",
-      dataIndex: "id",
-      key: "orderId",
-    },
-    {
       title: "Title",
       dataIndex: "title",
       key: "title",
     },
     {
-      title: "Code",
+      title: "Tracking code",
       dataIndex: "code",
       key: "code",
     },
@@ -61,62 +57,28 @@ const OrderTable = () => {
       key: "priority",
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-    },
-    {
-      title: "Result Status",
-      dataIndex: "result_status",
-      key: "resultStatus",
-    },
-    {
-      title: "Live Status",
-      dataIndex: "live_status",
-      key: "liveStatus",
-    },
-    {
-      title: "Daily Status",
-      dataIndex: "daily_status",
-      key: "dailyStatus",
-    },
-    {
       title: "Source Address",
       dataIndex: "source",
       key: "sourceAddress",
-      render: (record) => {
-        return record?.title || "";
-      },
+      render: (record) => <AddressVerify record={record} />,
     },
     {
       title: "Destination Address",
       dataIndex: "destination",
       key: "destinationAddress",
-      render: (record) => {
-        return record?.title || "";
-      },
-    },
-    {
-      title: "Source Verified",
-      dataIndex: "source_verified",
-      key: "sourceVerified",
-      ///render: (status) => <VerificationBadge status={status} />,
-    },
-    {
-      title: "Destination Verified",
-      dataIndex: "destination_verified",
-      key: "destinationVerified",
-      ///render: (status) => <VerificationBadge status={status} />,
+      render: (record) => <AddressVerify record={record} />,
     },
     {
       title: "Order Date",
       dataIndex: "created_at",
       key: "orderDate",
+      render: (record) => record?.split("T")[0],
     },
     {
       title: "Delivery Date",
       dataIndex: "delivery_date",
       key: "deliveryDate",
+      render: (record) => record?.split("T")[0],
     },
     {
       title: "Delivery Time From",
@@ -134,24 +96,14 @@ const OrderTable = () => {
       key: "quantity",
     },
     {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
+      title: "Stop duration",
+      dataIndex: "stop_time",
+      key: "stop_time",
     },
     {
-      title: "Vehicle",
-      dataIndex: "assigned_to_name",
-      key: "vehicle",
-    },
-    {
-      title: "Scheduled Driver",
+      title: "Assigned Driver",
       dataIndex: "driver_name",
       key: "scheduledDriver",
-    },
-    {
-      title: "Vehicle Plate",
-      dataIndex: "vehicle_plate",
-      key: "vehiclePlate",
     },
   ];
 
