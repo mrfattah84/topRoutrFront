@@ -6,14 +6,8 @@ export const orderApi = apiSlice.injectEndpoints({
     getOrder: builder.query({
       providesTags: ["Order"],
       query: (id) => ({
-        url: `orders/${id}`,
+        url: `orders/${id}/`,
       }),
-      transformResponse: (data) => {
-        data.map((order) => {
-          order.key = order.id;
-        });
-        return data;
-      },
     }),
     getAddresses: builder.query({
       providesTags: ["Address"],
@@ -60,7 +54,7 @@ export const orderApi = apiSlice.injectEndpoints({
             label: item.item_title,
           });
         });
-        console.log(newData)
+        console.log(newData);
         return newData;
       },
     }),
@@ -72,6 +66,14 @@ export const orderApi = apiSlice.injectEndpoints({
         body: data,
       }),
     }),
+    updateOrder: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/orders/${id}/`,
+        method: "PUT", // or 'PATCH'
+        body: data,
+      }),
+      invalidatesTags: ["Order"],
+    }),
   }),
 });
 
@@ -82,4 +84,5 @@ export const {
   useAddAddressMutation,
   useGetItemsQuery,
   useAddItemMutation,
+  useUpdateOrderMutation,
 } = orderApi;

@@ -86,11 +86,12 @@ const CustomDialog = () => {
         case "Add":
           return <AddOrder />;
         case "Edit":
-          if (selected.length() === 1) {
-            return <AddOrder id={selected[0]} />;
+          console.log(selected);
+          if (selected?.payload?.length === 1 || false) {
+            return <AddOrder id={selected.payload[0]} />;
           } else {
-            return null;
             dispatch(setForm(""));
+            return null;
           }
         case "Delete":
           return <DeleteOrder />;

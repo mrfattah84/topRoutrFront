@@ -6,14 +6,13 @@ import {
 import {
   Button,
   Col,
-  Flex,
   Form,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
   TimePicker,
+  Spin,
 } from "antd";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -22,22 +21,147 @@ import AddAddress from "../AddAddress";
 import AddressSelector from "./AddressSelector";
 import { useSelector, useDispatch } from "react-redux";
 import { setForm } from "../../dialogSlice";
-import { useCreateOrderMutation, useGetItemsQuery } from "./orderApi";
+import {
+  useCreateOrderMutation,
+  useUpdateOrderMutation,
+  useGetOrderQuery,
+} from "./orderApi";
 import CustomOrder from "./CustomOrder";
 import Box from "./Box";
 
-const AddOrder = ({ id = 0 }) => {
+const AddOrder = ({ id = null }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [step, setStep] = useState(0);
   const [showAddOrigin, setShowAddOrigin] = useState(false);
   const [showAddDestination, setShowAddDestination] = useState(false);
   const [showAddItem, setShowAddItem] = useState(null);
-  const [createOrder, { isLoading }] = useCreateOrderMutation();
+
+  const [createOrder, { isLoading: isCreating }] = useCreateOrderMutation();
+  const [updateOrder, { isLoading: isUpdating }] = useUpdateOrderMutation();
+
+  // Only fetch if id exists
+  const { data: orderData, isLoading: isFetching } = useGetOrderQuery(id, {
+    skip: !id,
+  });
 
   const [form] = Form.useForm();
   const dispatch = useDispatch();
 
   const format = "HH:mm";
+  const isEditMode = !!id;
+  const isLoading = isCreating || isUpdating;
+
+  // Reset form when switching between add/edit modes or when id changes
+  useEffect(() => {
+    // Reset form and state
+    form.resetFields();
+    setStep(0);
+    setShowCalendar(false);
+    setShowAddOrigin(false);
+    setShowAddDestination(false);
+    setShowAddItem(null);
+
+    console.log(
+      `Form reset - Mode: ${id ? "Edit" : "Add"}, ID: ${id || "N/A"}`
+    );
+  }, [id, form]);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (orderData && isEditMode) {
+      // Parse time string to dayjs object
+      const parseTime = (timeString) => {
+        if (!timeString) return null;
+        // Handle both "HH:mm:ss" and ISO format
+        return dayjs(timeString, "HH:mm:ss");
+      };
+
+      // Deformat the API data back to form structure
+      const deformattedData = {
+        // Basic fields - direct mapping
+        title: orderData.title,
+        source_id: orderData.source.uid,
+        destination_id: orderData.destination.uid,
+        priority: orderData.priority,
+        order_type: orderData.order_type,
+        description: orderData.description,
+
+        // Date field - keep as string (already in YYYY-MM-DD format)
+        order_date: orderData.order_date,
+        delivery_date: orderData.delivery_date,
+
+        // Time fields - convert string to dayjs
+        stop_time: parseTime(orderData.stop_time),
+
+        // Time windows - convert delivery_time_from/to to times array structure
+        times:
+          orderData.delivery_time_from && orderData.delivery_time_to
+            ? [
+                {
+                  time: [
+                    parseTime(orderData.delivery_time_from),
+                    parseTime(orderData.delivery_time_to),
+                  ],
+                },
+              ]
+            : [],
+
+        // Items - map order_item_id array back to Items structure
+        // Note: This assumes you have a way to fetch full item details from IDs
+        // If the API returns full order_items, map those instead
+        Items: orderData.order_items
+          ? orderData.order_items.map((item) => ({
+              itemId: item.id,
+              item_title: item.title,
+              description: item.description,
+              weight: item.weight,
+              length: item.length,
+              width: item.width,
+              height: item.height,
+              quantity: item.quantity,
+            }))
+          : orderData.order_item_id
+          ? orderData.order_item_id.map((itemId) => ({
+              itemId: itemId,
+              // You'll need to fetch other item details or leave them empty
+            }))
+          : [],
+
+        // Optional fields that might be in the API response
+        activated: orderData.activated,
+        driver_id: orderData.driver_id,
+        assigned_to_id: orderData.assigned_to_id,
+        cluster_id: orderData.cluster_id,
+        file_id: orderData.file_id,
+        delivery_order_sequence: orderData.delivery_order_sequence,
+        delivery_order: orderData.delivery_order,
+        delay_reason: orderData.delay_reason,
+        assignment: orderData.assignment,
+        shipment_type: orderData.shipment_type,
+      };
+
+      // Set form values with deformatted data
+      form.setFieldsValue(deformattedData);
+
+      console.log("=== FORM POPULATED FOR EDITING ===");
+      console.log("Original API Data:", orderData);
+      console.log("Deformatted Form Data:", deformattedData);
+      console.log("============================");
+    }
+  }, [orderData, isEditMode, form]);
+
+  // Cleanup: Reset form and state when component unmounts
+  useEffect(() => {
+    return () => {
+      form.resetFields();
+      setStep(0);
+      setShowCalendar(false);
+      setShowAddOrigin(false);
+      setShowAddDestination(false);
+      setShowAddItem(null);
+      console.log("Form cleaned up on unmount");
+    };
+  }, [form]);
 
   const handleSubmit = async () => {
     if (step === 0) {
@@ -112,7 +236,6 @@ const AddOrder = ({ id = 0 }) => {
           shipment_type: allFormData.shipment_type || null,
 
           // Item IDs array - extract from Items list
-          // make it [item.itemId, item.quantity]
           order_item_id: allFormData.Items?.map((item) => item.itemId) || [],
         };
 
@@ -120,8 +243,11 @@ const AddOrder = ({ id = 0 }) => {
         console.log("Formatted Order Data:", formattedData);
         console.log("============================");
 
-        // Call the mutation API
-        const result = await createOrder(formattedData).unwrap();
+        // Call the appropriate mutation API
+        const result = isEditMode
+          ? await updateOrder({ id, data: formattedData }).unwrap()
+          : await createOrder(formattedData).unwrap();
+
         console.log("API Response:", result);
 
         // On success
@@ -133,6 +259,16 @@ const AddOrder = ({ id = 0 }) => {
       }
     }
   };
+
+  // Show loading spinner while fetching order data
+  if (isFetching) {
+    return (
+      <div style={{ textAlign: "center", padding: "50px" }}>
+        <Spin size="large" />
+        <p style={{ marginTop: "16px" }}>Loading order data...</p>
+      </div>
+    );
+  }
 
   return (
     <Form layout="vertical" form={form} onSubmitCapture={handleSubmit}>
@@ -156,9 +292,7 @@ const AddOrder = ({ id = 0 }) => {
               suffix={<CalendarOutlined />}
               value={
                 form.getFieldValue("order_date")
-                  ? `${form.getFieldValue("order_date").jd}/${
-                      form.getFieldValue("order_date").jm
-                    }/${form.getFieldValue("order_date").jy}`
+                  ? form.getFieldValue("order_date")
                   : ""
               }
               onClick={() => {
@@ -174,7 +308,10 @@ const AddOrder = ({ id = 0 }) => {
               onDateSelect={(date, jalaali) => {
                 form.setFieldValue(
                   "order_date",
-                  `${jalaali.jy}-${jalaali.jm}-${jalaali.jd}`
+                  `${jalaali.jy}-${String(jalaali.jm).padStart(
+                    2,
+                    "0"
+                  )}-${String(jalaali.jd).padStart(2, "0")}`
                 );
                 setShowCalendar(false);
               }}
@@ -379,7 +516,7 @@ const AddOrder = ({ id = 0 }) => {
             </Button>
           )}
           <Button type="primary" htmlType="submit" loading={isLoading}>
-            {step === 0 ? "Next (1/2)" : "Submit"}
+            {step === 0 ? "Next (1/2)" : isEditMode ? "Update" : "Submit"}
           </Button>
         </Space>
       </Form.Item>
