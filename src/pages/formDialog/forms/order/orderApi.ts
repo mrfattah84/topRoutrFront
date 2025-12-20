@@ -47,6 +47,31 @@ export const orderApi = apiSlice.injectEndpoints({
         body: data,
       }),
     }),
+    getItems: builder.query({
+      providesTags: ["OrderItem"],
+      query: () => ({
+        url: `orderitems/`,
+      }),
+      transformResponse: (data) => {
+        const newData = [];
+        data.map((item) => {
+          newData.push({
+            value: item.id,
+            label: item.item_title,
+          });
+        });
+        console.log(newData)
+        return newData;
+      },
+    }),
+    addItem: builder.mutation({
+      invalidatesTags: ["OrderItem"],
+      query: (data) => ({
+        url: "orderitems/",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -54,5 +79,7 @@ export const {
   useGetOrderQuery,
   useGetAddressesQuery,
   useCreateOrderMutation,
-  useAddAddressMutation
+  useAddAddressMutation,
+  useGetItemsQuery,
+  useAddItemMutation,
 } = orderApi;

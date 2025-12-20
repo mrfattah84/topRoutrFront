@@ -16,19 +16,21 @@ import DeleteFleet from "./forms/fleet/DeleteFleet";
 import EditFleet from "./forms/fleet/EditFleet";
 import ImportFleet from "./forms/fleet/ImportFleet";
 import ImportOrder from "./forms/order/ImportOrder";
+import { selectedRowKeys, setDate } from "../table/order/orderTableSlice";
 
 const CustomDialog = () => {
   const [open, setOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
 
   const menue = useSelector(selectCurrentSidebarMenue);
   const form = useSelector(selectCurrentForm);
+  const selected = useSelector(selectedRowKeys);
 
   const dispatch = useDispatch();
 
   // Handle opening the modal when menue or form changes
   useEffect(() => {
     if (menue === "data-calendar") {
+      dispatch(setDate(""));
       setOpen(true);
       // Clear the menue selection after opening
       dispatch(setSidebarMenue(""));
@@ -40,7 +42,7 @@ const CustomDialog = () => {
   }, [menue, form, dispatch]);
 
   const handleDateSelect = (date, jalaali) => {
-    setSelectedDate(jalaali);
+    dispatch(setDate(`${jalaali.jd}-${jalaali.jm}-${jalaali.jy}`));
     console.log(`Selected: ${jalaali.jd}/${jalaali.jm}/${jalaali.jy}`);
   };
 
@@ -62,7 +64,12 @@ const CustomDialog = () => {
         case "Add":
           return <AddFleet />;
         case "Edit":
-          return <EditFleet />;
+          if (selected.length() === 1) {
+            return <EditFleet />;
+          } else {
+            return null;
+            dispatch(setForm(""));
+          }
         case "Delete":
           return <DeleteFleet />;
         case "Import":
@@ -79,7 +86,12 @@ const CustomDialog = () => {
         case "Add":
           return <AddOrder />;
         case "Edit":
-          return <EditOrder />;
+          if (selected.length() === 1) {
+            return <AddOrder id={selected[0]} />;
+          } else {
+            return null;
+            dispatch(setForm(""));
+          }
         case "Delete":
           return <DeleteOrder />;
         case "Import":

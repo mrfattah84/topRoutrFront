@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { Button, Flex, Space, Switch, Table, Tag } from "antd";
 import { useGetOrdersQuery } from "./orderTableApi";
 import { setForm } from "../../formDialog/dialogSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { selectedRowKeys, setSelectedRowKeys } from "./orderTableSlice";
+import {
+  selectDate,
+  selectedRowKeys,
+  setSelectedRowKeys,
+} from "./orderTableSlice";
 import { useChangeActiveMutation } from "./orderTableApi";
 
 const OrderTable = () => {
@@ -11,6 +15,7 @@ const OrderTable = () => {
   const [changeActive] = useChangeActiveMutation();
   const dispatch = useDispatch();
   const rows = useSelector(selectedRowKeys);
+  const date = useSelector(selectDate);
   const rowSelection = {
     rows,
     onChange: (rows) => {
@@ -150,7 +155,15 @@ const OrderTable = () => {
     },
   ];
 
-  console.log(data);
+  const filteredData = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+    if (!date) {
+      return data;
+    }
+    return data.filter((item) => item.created_at === date);
+  }, [data, date]);
 
   return (
     <div className="relative">
@@ -177,7 +190,7 @@ const OrderTable = () => {
       <Table
         rowSelection={rowSelection}
         columns={columns}
-        dataSource={data}
+        dataSource={filteredData}
         loading={isLoading}
         pagination={{ placement: ["none", "none"] }}
         scroll={{ x: "max-content" }}

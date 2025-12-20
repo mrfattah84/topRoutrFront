@@ -6,6 +6,7 @@ import {
 import {
   Button,
   Col,
+  Flex,
   Form,
   Input,
   InputNumber,
@@ -20,13 +21,16 @@ import AddAddress from "../AddAddress";
 import AddressSelector from "./AddressSelector";
 import { useSelector, useDispatch } from "react-redux";
 import { setForm } from "../../dialogSlice";
-import { useCreateOrderMutation } from "./orderApi";
+import { useCreateOrderMutation, useGetItemsQuery } from "./orderApi";
+import CustomOrder from "./CustomOrder";
+import Box from "./Box";
 
-const AddOrder = () => {
+const AddOrder = ({ id = 0 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [step, setStep] = useState(0);
   const [showAddOrigin, setShowAddOrigin] = useState(false);
   const [showAddDestination, setShowAddDestination] = useState(false);
+  const [showAddItem, setShowAddItem] = useState(-1);
   const [createOrder, { isLoading }] = useCreateOrderMutation();
 
   const [form] = Form.useForm();
@@ -38,15 +42,7 @@ const AddOrder = () => {
     if (step === 0) {
       // Moving to step 1, validate current fields
       try {
-        await form.validateFields([
-          "date",
-          "originLocation",
-          "destinationLocation",
-          "volume",
-          "quantity",
-          "limitNumberOfOrders",
-          "description",
-        ]);
+        await form.validateFields(["date"]);
         setStep(1);
       } catch (error) {
         console.error("Step 0 validation failed:", error);
@@ -61,6 +57,8 @@ const AddOrder = () => {
 
         // Get all form values
         const allFormData = form.getFieldsValue(true);
+        console.log("=== ORDER FORM SUBMISSION ===");
+        console.log("Raw Form Data:", allFormData);
 
         // Format the data for better readability
         const formattedData = {
@@ -71,7 +69,6 @@ const AddOrder = () => {
           destination_id: allFormData.destinationLocation,
           volume: allFormData.volume,
           quantity: allFormData.quantity,
-          limit_number_of_orders: allFormData.limitNumberOfOrders,
           description: allFormData.description,
 
           // Step 1 data
@@ -86,9 +83,7 @@ const AddOrder = () => {
         };
 
         // Console log all collected data
-        console.log("=== ORDER FORM SUBMISSION ===");
         console.log("All Form Data:", formattedData);
-        console.log("Raw Form Data:", allFormData);
         console.log("============================");
 
         // Call the mutation API
@@ -124,10 +119,10 @@ const AddOrder = () => {
               placeholder="Enter date"
               suffix={<CalendarOutlined />}
               value={
-                form.getFieldValue("date")
-                  ? `${form.getFieldValue("date").jd}/${
-                      form.getFieldValue("date").jm
-                    }/${form.getFieldValue("date").jy}`
+                form.getFieldValue("order_date")
+                  ? `${form.getFieldValue("order_date").jd}/${
+                      form.getFieldValue("order_date").jm
+                    }/${form.getFieldValue("order_date").jy}`
                   : ""
               }
               onClick={() => {
@@ -139,9 +134,9 @@ const AddOrder = () => {
           {showCalendar && (
             <Calendar
               className="mt-2"
-              selectedDate={form.getFieldValue("date")}
+              selectedDate={form.getFieldValue("order_date")}
               onDateSelect={(date, jalaali) => {
-                form.setFieldValue("date", jalaali);
+                form.setFieldValue("order_date", jalaali);
                 setShowCalendar(false);
               }}
             />
@@ -149,18 +144,22 @@ const AddOrder = () => {
 
           {showAddOrigin ? (
             <Form.Item label="Add Origin Address">
-              <AddAddress setShowAddAddress={setShowAddOrigin} />
+              <AddAddress
+                show={setShowAddOrigin}
+                form={form}
+                type="source_id"
+              />
             </Form.Item>
           ) : (
             <Form.Item
               label="Origin location"
-              name="originLocation"
+              name="source_id"
               rules={[
                 { required: true, message: "Please select origin location" },
               ]}
             >
               <AddressSelector
-                name="originLocation"
+                name="source_id"
                 onAddAddress={() => setShowAddOrigin(true)}
               />
             </Form.Item>
@@ -168,12 +167,16 @@ const AddOrder = () => {
 
           {showAddDestination ? (
             <Form.Item label="Add Destination Address">
-              <AddAddress setShowAddAddress={setShowAddDestination} />
+              <AddAddress
+                show={setShowAddDestination}
+                form={form}
+                type="destination_id"
+              />
             </Form.Item>
           ) : (
             <Form.Item
               label="Destination location"
-              name="destinationLocation"
+              name="destination_id"
               rules={[
                 {
                   required: true,
@@ -182,44 +185,42 @@ const AddOrder = () => {
               ]}
             >
               <AddressSelector
-                name="destinationLocation"
+                name="destination_id"
                 onAddAddress={() => setShowAddDestination(true)}
               />
             </Form.Item>
           )}
 
           <Form.Item
-            label="Volume"
-            name="volume"
-            rules={[{ required: true, message: "Please enter volume" }]}
+            label="priority"
+            name="priority"
+            rules={[{ required: true, message: "Please select priority" }]}
           >
-            <InputNumber
-              style={{ width: "100%" }}
-              placeholder="Enter volume"
-              min="0"
-              step="0.01"
+            <Select
+              placeholder="select priority"
+              defaultValue={"medium"}
+              options={[
+                { value: "low", label: "Low" },
+                { value: "medium", label: "Medium" },
+                { value: "high", label: "High" },
+              ]}
             />
           </Form.Item>
 
           <Form.Item
-            label="Quantity"
-            name="quantity"
-            rules={[{ required: true, message: "Please enter quantity" }]}
+            label="Order type"
+            name="order_type"
+            rules={[{ required: true, message: "Please select order type" }]}
           >
-            <InputNumber
-              style={{ width: "100%" }}
-              placeholder="Enter quantity"
-              min="0"
-              step="1"
-            />
-          </Form.Item>
-
-          <Form.Item label="Limit number of orders" name="limitNumberOfOrders">
-            <InputNumber
-              style={{ width: "100%" }}
-              placeholder="Enter limit number of orders"
-              min="0"
-              step="1"
+            <Select
+              placeholder="select order type"
+              options={[
+                { value: "standard", label: "Standard" },
+                { value: "express", label: "Express" },
+                { value: "scheduled", label: "Scheduled" },
+                { value: "pickup", label: "Pickup" },
+                { value: "delivery", label: "Delivery" },
+              ]}
             />
           </Form.Item>
 
@@ -229,80 +230,45 @@ const AddOrder = () => {
         </>
       ) : (
         <>
-          <Row gutter={8} style={{ width: "100%" }}>
-            <Col span={12}>
-              <Form.Item
-                label="weight"
-                name="weight"
-                rules={[{ required: true, message: "Please enter weight" }]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Enter weight"
-                  min="0"
-                  step="0.01"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="length"
-                name="length"
-                rules={[{ required: true, message: "Please enter length" }]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Enter length"
-                  min="0"
-                  step="0.01"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={8} style={{ width: "100%" }}>
-            <Col span={12}>
-              <Form.Item
-                label="width"
-                name="width"
-                rules={[{ required: true, message: "Please enter width" }]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Enter width"
-                  min="0"
-                  step="0.01"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="height"
-                name="height"
-                rules={[{ required: true, message: "Please enter height" }]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Enter height"
-                  min="0"
-                  step="0.01"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item
-            label="priority"
-            name="priority"
-            rules={[{ required: true, message: "Please select priority" }]}
-          >
-            <Select
-              placeholder="select priority"
-              options={[
-                { value: "low", label: "Low" },
-                { value: "medium", label: "Medium" },
-                { value: "high", label: "High" },
-              ]}
-            />
+          <Form.Item label="Order Items">
+            <Form.List name="Items">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key}>
+                      {showAddItem === name ? (
+                        <CustomOrder
+                          show={setShowAddItem}
+                          form={form}
+                          name={name}
+                        />
+                      ) : (
+                        <Box
+                          name={name}
+                          remove={remove}
+                          setShowAddItem={setShowAddItem}
+                        />
+                      )}
+                    </div>
+                  ))}
+                  <Form.Item style={{ marginBottom: 0 }}>
+                    <Button
+                      onClick={() => {
+                        add();
+                        setShowAddItem(fields.length);
+                      }}
+                      type="dashed"
+                      block
+                      icon={<PlusOutlined />}
+                    >
+                      Add Item
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
           </Form.Item>
+
           <Form.Item label="Time window">
             <Form.List name="times">
               {(fields, { add, remove }) => (
@@ -345,36 +311,22 @@ const AddOrder = () => {
               )}
             </Form.List>
           </Form.Item>
-          <Form.Item
-            label="Order type"
-            name="orderType"
-            rules={[{ required: true, message: "Please select order type" }]}
-          >
-            <Select
-              placeholder="select order type"
-              options={[
-                { value: "standard", label: "Standard" },
-                { value: "express", label: "Express" },
-                { value: "scheduled", label: "Scheduled" },
-                { value: "pickup", label: "Pickup" },
-                { value: "delivery", label: "Delivery" },
-              ]}
-            />
-          </Form.Item>
         </>
       )}
       <Form.Item style={{ textAlign: "end" }}>
         <Space>
-          <Button
-            htmlType="button"
-            onClick={() => {
-              setStep(0);
-            }}
-          >
-            back
-          </Button>
+          {step == 0 || (
+            <Button
+              htmlType="button"
+              onClick={() => {
+                setStep(0);
+              }}
+            >
+              back
+            </Button>
+          )}
           <Button type="primary" htmlType="submit" loading={isLoading}>
-            {step == 0 ? "Next" : "Submit"}
+            {step == 0 ? "Next(1/2)" : "Submit"}
           </Button>
         </Space>
       </Form.Item>
