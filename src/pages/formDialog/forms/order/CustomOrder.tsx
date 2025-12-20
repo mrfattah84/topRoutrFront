@@ -22,7 +22,7 @@ const CustomOrder = ({ show, form, name }) => {
       // Optionally call your API here if needed
       const res = await addItem(itemData);
 
-      show(-1);
+      show(null);
     } catch (error) {
       console.error("Validation failed:", error);
     }
@@ -146,7 +146,7 @@ const CustomOrder = ({ show, form, name }) => {
                   ["Items", name, "width"],
                   ["Items", name, "height"],
                 ]);
-                show(-1);
+                show(null);
               }}
             >
               Cancel
