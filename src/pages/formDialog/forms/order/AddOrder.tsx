@@ -236,14 +236,14 @@ const AddOrder = ({ id = 0 }) => {
                 label="Priority"
                 name="priority"
                 rules={[{ required: true, message: "Please select priority" }]}
-                initialValue="1"
+                initialValue="medium"
               >
                 <Select
                   placeholder="Select priority"
                   options={[
-                    { value: "1", label: "Low" },
-                    { value: "2", label: "Medium" },
-                    { value: "3", label: "High" },
+                    { value: "low", label: "Low" },
+                    { value: "medium", label: "Medium" },
+                    { value: "high", label: "High" },
                   ]}
                 />
               </Form.Item>
