@@ -1,6 +1,6 @@
 import { Button, Col, Form, Row, Select } from "antd";
 import React from "react";
-import { useGetAddressesQuery } from "./orderApi";
+import { useGetAddressesQuery } from "./order/orderApi";
 
 interface AddressSelectorProps {
   name: string;

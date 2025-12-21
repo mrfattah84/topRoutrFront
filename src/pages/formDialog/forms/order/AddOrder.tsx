@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import Calendar from "../../../../components/Calendar";
 import AddAddress from "../AddAddress";
-import AddressSelector from "./AddressSelector";
+import AddressSelector from "../AddressSelector";
 import { useSelector, useDispatch } from "react-redux";
 import { setForm } from "../../dialogSlice";
 import {

@@ -10,8 +10,6 @@ import {
 import Calendar from "../../components/Calendar";
 import AddOrder from "./forms/order/AddOrder";
 import AddFleet from "./forms/fleet/AddFleet";
-import DeleteFleet from "./forms/fleet/DeleteFleet";
-import EditFleet from "./forms/fleet/EditFleet";
 import ImportFleet from "./forms/fleet/ImportFleet";
 import ImportOrder from "./forms/order/ImportOrder";
 import { selectedRowKeys, setDate } from "../table/order/orderTableSlice";
@@ -66,13 +64,13 @@ const CustomDialog = () => {
           return <AddFleet />;
         case "Edit":
           if (selected.length() === 1) {
-            return <EditFleet />;
+            return <div></div>;
           } else {
             return null;
             dispatch(setForm(""));
           }
         case "Delete":
-          return <DeleteFleet />;
+          return <div></div>;
         case "Import":
           return <ImportFleet />;
         case "Export":
