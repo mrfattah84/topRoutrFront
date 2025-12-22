@@ -13,15 +13,18 @@ export const orderApi = apiSlice.injectEndpoints({
       query: () => ({
         url: `address/`,
       }),
-      transformResponse: (data) => {
-        const newData = [];
-        data.map((location) => {
-          newData.push({
-            value: location.uid,
-            label: location.title + " - " + location.description,
-          });
-        });
-        return newData;
+      transformResponse: (responseData: any[]) => {
+        if (!Array.isArray(responseData)) {
+          console.error(
+            "getAddresses transformResponse expected an array but got:",
+            responseData
+          );
+          return [];
+        }
+        return responseData.map((location) => ({
+          value: location.uid,
+          label: `${location.title} - ${location.description}`,
+        }));
       },
     }),
     createOrder: builder.mutation({
@@ -45,16 +48,18 @@ export const orderApi = apiSlice.injectEndpoints({
       query: () => ({
         url: `orderitems/`,
       }),
-      transformResponse: (data) => {
-        const newData = [];
-        data.map((item) => {
-          newData.push({
-            value: item.id,
-            label: item.item_title,
-          });
-        });
-        console.log(newData);
-        return newData;
+      transformResponse: (responseData: any[]) => {
+        if (!Array.isArray(responseData)) {
+          console.error(
+            "getItems transformResponse expected an array but got:",
+            responseData
+          );
+          return [];
+        }
+        return responseData.map((item) => ({
+          value: item.id,
+          label: item.item_title,
+        }));
       },
     }),
     addItem: builder.mutation({
@@ -80,6 +85,36 @@ export const orderApi = apiSlice.injectEndpoints({
         method: "DELETE",
       }),
     }),
+    getFleetsOptions: builder.query({
+      providesTags: ["Fleet"],
+      query: () => ({
+        url: `drivers/`,
+      }),
+      transformResponse: (data) => {
+        console.log(22);
+
+        console.log("fleets raw data:", data);
+
+        // Guard against data not being an array.
+        if (!Array.isArray(data)) {
+          console.error(
+            "getFleets transformResponse expected an array but got:",
+            data
+          );
+          return []; // Return empty array to avoid crashes.
+        }
+
+        const transformedData = data.map((driver) => ({
+          // IMPORTANT: You may need to adjust these properties to match your API response.
+          // Based on your other code, `driver.id` and `driver.name` are likely candidates.
+          value: driver.id,
+          label:
+            driver.driver_user.first_name + " " + driver.driver_user.last_name,
+        }));
+        console.log("fleets transformed data:", transformedData);
+        return transformedData;
+      },
+    }),
   }),
 });
 
@@ -92,4 +127,5 @@ export const {
   useAddItemMutation,
   useUpdateOrderMutation,
   useDeleteOrderMutation,
+  useGetFleetsOptionsQuery,
 } = orderApi;

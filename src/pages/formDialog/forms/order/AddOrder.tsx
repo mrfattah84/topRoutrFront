@@ -13,6 +13,7 @@ import {
   Space,
   TimePicker,
   Spin,
+  InputNumber,
 } from "antd";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -25,6 +26,7 @@ import {
   useCreateOrderMutation,
   useUpdateOrderMutation,
   useGetOrderQuery,
+  useGetFleetsOptionsQuery,
 } from "./orderApi";
 import CustomOrder from "./CustomOrder";
 import Box from "./Box";
@@ -38,6 +40,10 @@ const AddOrder = ({ id = null }) => {
 
   const [createOrder, { isLoading: isCreating }] = useCreateOrderMutation();
   const [updateOrder, { isLoading: isUpdating }] = useUpdateOrderMutation();
+
+  // Provide a default empty array to prevent passing `undefined` to the Select component
+  const { data: fleets = [], isLoading: isFleetsLoading } =
+    useGetFleetsOptionsQuery();
 
   // Only fetch if id exists
   const { data: orderData, isLoading: isFetching } = useGetOrderQuery(id, {
@@ -73,13 +79,13 @@ const AddOrder = ({ id = null }) => {
       const parseTime = (timeString) => {
         if (!timeString) return null;
         // Handle both "HH:mm:ss" and ISO format
-        return dayjs(timeString, "HH:mm:ss");
+        return dayjs(timeString, "HH:mm");
       };
 
       // Deformat the API data back to form structure
       const deformattedData = {
         // Basic fields - direct mapping
-        title: orderData.title,
+        order_number: orderData.order_number,
         source_id: orderData.source.uid,
         destination_id: orderData.destination.uid,
         priority: orderData.priority,
@@ -87,7 +93,6 @@ const AddOrder = ({ id = null }) => {
         description: orderData.description,
 
         // Date field - keep as string (already in YYYY-MM-DD format)
-        order_date: orderData.order_date,
         delivery_date: orderData.delivery_date,
 
         // Time fields - convert string to dayjs
@@ -112,32 +117,12 @@ const AddOrder = ({ id = null }) => {
         Items: orderData.order_items
           ? orderData.order_items.map((item) => ({
               itemId: item.id,
-              item_title: item.title,
-              description: item.description,
-              weight: item.weight,
-              length: item.length,
-              width: item.width,
-              height: item.height,
               quantity: item.quantity,
-            }))
-          : orderData.order_item_id
-          ? orderData.order_item_id.map((itemId) => ({
-              itemId: itemId,
-              // You'll need to fetch other item details or leave them empty
             }))
           : [],
 
-        // Optional fields that might be in the API response
-        activated: orderData.activated,
-        driver_id: orderData.driver_id,
-        assigned_to_id: orderData.assigned_to_id,
-        cluster_id: orderData.cluster_id,
-        file_id: orderData.file_id,
-        delivery_order_sequence: orderData.delivery_order_sequence,
-        delivery_order: orderData.delivery_order,
-        delay_reason: orderData.delay_reason,
-        assignment: orderData.assignment,
-        shipment_type: orderData.shipment_type,
+        assigned_to_id: orderData.driver.id,
+        code: orderData.code,
       };
 
       // Set form values with deformatted data
@@ -168,8 +153,8 @@ const AddOrder = ({ id = null }) => {
       // Moving to step 1, validate current fields
       try {
         await form.validateFields([
-          "title",
-          "order_date",
+          "order_number",
+          "delivery_date",
           "source_id",
           "destination_id",
           "priority",
@@ -196,12 +181,11 @@ const AddOrder = ({ id = null }) => {
           // Required fields
           source_id: allFormData.source_id,
           destination_id: allFormData.destination_id,
-          title: allFormData.title,
+          order_number: allFormData.order_number,
           order_type: allFormData.order_type,
           priority: allFormData.priority,
 
           // Date fields
-          order_date: allFormData.order_date,
           delivery_date: allFormData.delivery_date || null,
 
           // Time fields - format to ISO string
@@ -217,26 +201,15 @@ const AddOrder = ({ id = null }) => {
           // Optional fields
           description: allFormData.description || null,
           stop_time: allFormData.stop_time?.format("HH:mm:ss"),
-          activated:
-            allFormData.activated !== undefined ? allFormData.activated : true,
 
-          // IDs (optional, can be null)
-          driver_id: allFormData.driver_id || null,
-          assigned_to_id: allFormData.assigned_to_id || null,
-          cluster_id: allFormData.cluster_id || null,
-          file_id: allFormData.file_id || null,
-
-          // Order details
-          delivery_order_sequence: allFormData.delivery_order_sequence || null,
-          delivery_order: allFormData.delivery_order || null,
-          delay_reason: allFormData.delay_reason || null,
-
-          // Status fields
-          assignment: allFormData.assignment || null,
-          shipment_type: allFormData.shipment_type || null,
+          driver_id: allFormData.assigned_to_id || null,
 
           // Item IDs array - extract from Items list
-          order_item_id: allFormData.Items?.map((item) => item.itemId) || [],
+          order_item_id:
+            allFormData.Items?.map((item) => ({
+              id: item.itemId,
+              quantity: item.quantity,
+            })) || [],
         };
 
         // Console log all collected data
@@ -275,24 +248,24 @@ const AddOrder = ({ id = null }) => {
       {step === 0 ? (
         <>
           <Form.Item
-            label="Title"
-            name="title"
-            rules={[{ required: true, message: "Please enter title" }]}
+            label="Order number"
+            name="order_number"
+            rules={[{ required: false, message: "Please enter order number" }]}
           >
-            <Input style={{ width: "100%" }} placeholder="Enter title" />
+            <Input style={{ width: "100%" }} placeholder="Enter order number" />
           </Form.Item>
 
           <Form.Item
-            label="Order Date"
-            name="order_date"
+            label="Delivery Date"
+            name="delivery_date"
             rules={[{ required: true, message: "Please select a date" }]}
           >
             <Input
               placeholder="Enter date"
               suffix={<CalendarOutlined />}
               value={
-                form.getFieldValue("order_date")
-                  ? form.getFieldValue("order_date")
+                form.getFieldValue("delivery_date")
+                  ? form.getFieldValue("delivery_date")
                   : ""
               }
               onClick={() => {
@@ -304,10 +277,10 @@ const AddOrder = ({ id = null }) => {
           {showCalendar && (
             <Calendar
               className="mt-2"
-              selectedDate={form.getFieldValue("order_date")}
+              selectedDate={form.getFieldValue("delivery_date")}
               onDateSelect={(date, jalaali) => {
                 form.setFieldValue(
-                  "order_date",
+                  "delivery_date",
                   `${jalaali.jy}-${String(jalaali.jm).padStart(
                     2,
                     "0"
@@ -373,14 +346,14 @@ const AddOrder = ({ id = null }) => {
                 label="Priority"
                 name="priority"
                 rules={[{ required: true, message: "Please select priority" }]}
-                initialValue="medium"
+                initialValue="2"
               >
                 <Select
                   placeholder="Select priority"
                   options={[
-                    { value: "low", label: "Low" },
-                    { value: "medium", label: "Medium" },
-                    { value: "high", label: "High" },
+                    { value: "3", label: "Low" },
+                    { value: "2", label: "Medium" },
+                    { value: "1", label: "High" },
                   ]}
                 />
               </Form.Item>
@@ -409,7 +382,13 @@ const AddOrder = ({ id = null }) => {
             </Col>
 
             <Col span={8}>
-              <Form.Item label="Stop duration" name="stop_time">
+              <Form.Item
+                label="Stop duration"
+                name="stop_time"
+                rules={[
+                  { required: true, message: "Please set the stop time" },
+                ]}
+              >
                 <TimePicker format={format} minuteStep={15} />
               </Form.Item>
             </Col>
@@ -501,6 +480,24 @@ const AddOrder = ({ id = null }) => {
               )}
             </Form.List>
           </Form.Item>
+
+          <Row gutter={8} style={{ width: "100%" }}>
+            <Col span={12}>
+              <Form.Item label="Tracking code" name="code">
+                <InputNumber style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Driver" name="assigned_to_id">
+                <Select
+                  showSearch={{ optionFilterProp: "label" }}
+                  placeholder="Search in drivers"
+                  options={fleets}
+                  loading={isFleetsLoading}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </>
       )}
       <Form.Item style={{ textAlign: "end" }}>
