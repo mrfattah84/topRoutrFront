@@ -115,6 +115,13 @@ export const orderApi = apiSlice.injectEndpoints({
         return transformedData;
       },
     }),
+    getDefinedLatLons: builder.query({
+      providesTags: ["Address"],
+      query: () => ({
+        url: `address/`,
+      }),
+    }),
+    
   }),
 });
 
@@ -128,4 +135,5 @@ export const {
   useUpdateOrderMutation,
   useDeleteOrderMutation,
   useGetFleetsOptionsQuery,
+  useGetDefinedLatLonsQuery,
 } = orderApi;

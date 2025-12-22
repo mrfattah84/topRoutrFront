@@ -15,102 +15,45 @@ import { useDispatch } from "react-redux";
 import type { UploadFile } from "antd/es/upload/interface";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
+import {
+  useAddAddressMutation,
+  useAddItemMutation,
+  useCreateOrderMutation,
+  useGetDefinedLatLonsQuery,
+} from "./orderApi";
+import dayjs from "dayjs";
 
 const { Dragger } = Upload;
 
 // Expected system columns with their descriptions
 const SYSTEM_COLUMNS = [
   {
-    value: "source_id",
-    label: "Source Address",
+    value: "order_number",
+    label: "Factor number(Order number)",
     required: true,
-    needsCreation: true,
+    needsCreation: false,
   },
   {
-    value: "destination_id",
-    label: "Destination Address",
+    value: "stop_time",
+    label: "Stop Duration(Min)",
     required: true,
-    needsCreation: true,
-  },
-  {
-    value: "driver_id",
-    label: "Driver ID",
-    required: false,
     needsCreation: false,
   },
   {
-    value: "assigned_to_id",
-    label: "Assigned Vehicle ID",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "cluster_id",
-    label: "Cluster ID",
-    required: false,
-    needsCreation: false,
-  },
-  { value: "file_id", label: "File ID", required: false, needsCreation: false },
-  {
-    value: "delivery_order_sequence",
-    label: "Delivery Order Sequence",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "delivery_order",
-    label: "Delivery Order",
+    value: "order_date",
+    label: "Order Date",
     required: false,
     needsCreation: false,
   },
   {
     value: "delivery_date",
     label: "Delivery Date",
-    required: false,
+    required: true,
     needsCreation: false,
   },
   {
-    value: "delivery_time_to",
-    label: "Delivery Time To",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "delivery_time_from",
-    label: "Delivery Time From",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "delivery_time_actual",
-    label: "Delivery Time Actual",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "stop_time",
-    label: "Stop Time",
-    required: false,
-    needsCreation: false,
-  },
-  { value: "title", label: "Title", required: true, needsCreation: false },
-  { value: "code", label: "Code", required: false, needsCreation: false },
-  {
-    value: "description",
-    label: "Description",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "activated",
-    label: "Activated",
-    required: false,
-    needsCreation: false,
-  },
-  { value: "price", label: "Price", required: false, needsCreation: false },
-  {
-    value: "delay_reason",
-    label: "Delay Reason",
+    value: "priority",
+    label: "Priority",
     required: false,
     needsCreation: false,
   },
@@ -121,54 +64,63 @@ const SYSTEM_COLUMNS = [
     needsCreation: false,
   },
   {
-    value: "order_date",
-    label: "Order Date",
+    value: "code",
+    label: "Delivery code",
+    required: false,
+    needsCreation: false,
+  },
+  {
+    value: "delivery_time_from",
+    label: "Time window(From)",
+    required: false,
+    needsCreation: false,
+  },
+  {
+    value: "delivery_time_to",
+    label: "Time window(To)",
+    required: false,
+    needsCreation: false,
+  },
+  {
+    value: "assigned_to",
+    label: "Assigned to fleet",
+    required: false,
+    needsCreation: false,
+  },
+
+  ///orderItem
+  { value: "length", label: "Length", required: false, needsCreation: false },
+  {
+    value: "width",
+    label: "Width",
+    required: false,
+    needsCreation: false,
+  },
+  {
+    value: "height",
+    label: "Height",
+    required: false,
+    needsCreation: false,
+  },
+  {
+    value: "volume",
+    label: "Volume(m3)",
+    required: false,
+    needsCreation: false,
+  },
+  {
+    value: "weight",
+    label: "Weight(Kg)",
     required: true,
     needsCreation: false,
   },
   {
-    value: "priority",
-    label: "Priority",
+    value: "quantity",
+    label: "quantity",
     required: false,
     needsCreation: false,
   },
-  { value: "status", label: "Status", required: false, needsCreation: false },
-  {
-    value: "result_status",
-    label: "Result Status",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "live_status",
-    label: "Live Status",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "daily_status",
-    label: "Daily Status",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "assignment",
-    label: "Assignment",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "shipment_type",
-    label: "Shipment Type",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "order_item_id",
-    label: "Order Item IDs",
-    required: false,
-    needsCreation: false,
-  },
+
   // Address-related fields
   {
     value: "source_address_text",
@@ -219,6 +171,11 @@ const ImportOrder = () => {
     {}
   );
   const [allFileData, setAllFileData] = useState<any[]>([]);
+
+  const { data: preDefinedLatLongs } = useGetDefinedLatLonsQuery();
+  const [createAddress] = useAddAddressMutation();
+  const [createItem] = useAddItemMutation();
+  const [createOrder] = useCreateOrderMutation();
 
   const parseFile = async (file: File) => {
     if (!file || !file.name) {
@@ -276,7 +233,7 @@ const ImportOrder = () => {
   const handleNextStep = async () => {
     if (step === 0) {
       try {
-        await form.validateFields(["format", "file"]);
+        await form.validateFields(["file"]);
 
         if (fileList.length === 0) {
           alert("Please upload a file first");
@@ -357,7 +314,6 @@ const ImportOrder = () => {
       const formData = form.getFieldsValue();
 
       console.log("=== ORDER IMPORT SUBMISSION ===");
-      console.log("Import format:", formData.format);
       console.log("Column mapping:", columnMapping);
       console.log("Total rows to process:", allFileData.length);
       console.log("Files:", fileList);
@@ -380,10 +336,7 @@ const ImportOrder = () => {
         return transformedRow;
       });
 
-      console.log(
-        "Sample transformed data (first 3 rows):",
-        transformedOrders.slice(0, 3)
-      );
+      console.log("Sample transformed data:", transformedOrders);
       console.log("==============================");
 
       // Here you would:
@@ -391,8 +344,86 @@ const ImportOrder = () => {
       // 2. Create orders with the transformed data
       // 3. Handle any errors and show progress
 
-      // For now, simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      transformedOrders.forEach(async (order) => {
+        let sourceId = null;
+        let destinationId = null;
+
+        preDefinedLatLongs.forEach((Address) => {
+          if (
+            Address.latitude == order.source_latitude &&
+            Address.longitude == order.source_longitude
+          ) {
+            sourceId = Address.uid;
+          }
+
+          if (
+            Address.latitude == order.destination_latitude &&
+            Address.longitude == order.destination_longitude
+          ) {
+            destinationId = Address.uid;
+          }
+        });
+
+        if (!sourceId) {
+          sourceId = await createAddress({
+            description: order.source_address_text || "UPLOAD",
+            location_data: {
+              latitude: order.source_latitude || "UPLOAD",
+              longitude: order.source_longitude || "UPLOAD",
+            },
+          }).unwrap();
+          console.log(sourceId);
+        }
+
+        if (!destinationId) {
+          destinationId = await createAddress({
+            description: order.destination_address_text || "UPLOAD",
+            location_data: {
+              latitude: order.destination_latitude || "UPLOAD",
+              longitude: order.destination_longitude || "UPLOAD",
+            },
+          }).unwrap();
+        }
+
+        const itemId = await createItem({
+          description: "UPLOAD",
+          volume: order.volume || null,
+          weight: order.weight || null,
+          length: order.length || null,
+          width: order.width || null,
+          height: order.height || null,
+        });
+
+        const driverId = "";
+
+        createOrder({
+          source_id: sourceId?.uid || sourceId,
+          destination_id: destinationId?.uid || destinationId,
+          driver_id: driverId,
+          delivery_date: order.delivery_date,
+          delivery_time_to:
+            dayjs()
+              .second(order.delivery_time_to * 86400)
+              .format("HH:mm") || null,
+          delivery_time_from:
+            dayjs()
+              .second(parseInt(order.delivery_time_from) * 86400)
+              .format("HH:mm") || null,
+          stop_time: dayjs().minute(parseInt(order.stop_time)).format("HH:mm"),
+          order_number: order.order_number,
+          code: order.code || null,
+          description: "created by UPLOAD",
+          order_type: order.order_type,
+          order_date: order.order_date || null,
+          priority: order.priority || null,
+          order_item_id: [
+            {
+              id: itemId.data.id,
+              quantity: order?.quantity || 1,
+            },
+          ],
+        });
+      });
 
       alert(`Successfully imported ${transformedOrders.length} orders!`);
 
@@ -562,24 +593,6 @@ const ImportOrder = () => {
             style={{ marginBottom: 16 }}
           />
 
-          <Form.Item
-            label="Import Format"
-            name="format"
-            rules={[{ required: true, message: "Please select import format" }]}
-            initialValue="csv"
-          >
-            <Select
-              placeholder="Select format"
-              options={[
-                { value: "csv", label: "CSV (Comma-separated)" },
-                { value: "xlsx", label: "Excel (XLSX)" },
-                { value: "xls", label: "Excel Legacy (XLS)" },
-              ]}
-            />
-          </Form.Item>
-
-          <Divider />
-
           <div style={{ marginBottom: 16 }}>
             <Button
               icon={<DownloadOutlined />}
@@ -627,14 +640,6 @@ const ImportOrder = () => {
               style={{ marginTop: 16 }}
             />
           )}
-
-          <Alert
-            title="Required Data"
-            description="Your file should include: Title, Order Type, Order Date, and address information (either address text or coordinates)"
-            type="warning"
-            showIcon
-            style={{ marginTop: 16 }}
-          />
         </>
       ) : step === 1 ? (
         <>
@@ -723,7 +728,6 @@ const ImportOrder = () => {
                     .length
                 }
               </li>
-              <li>Format: {form.getFieldValue("format")?.toUpperCase()}</li>
             </ul>
           </div>
 

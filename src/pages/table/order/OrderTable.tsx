@@ -42,19 +42,9 @@ const OrderTable = () => {
       ),
     },
     {
-      title: "Title",
-      dataIndex: "title",
-      key: "title",
-    },
-    {
-      title: "Tracking code",
-      dataIndex: "code",
-      key: "code",
-    },
-    {
-      title: "Priority",
-      dataIndex: "priority",
-      key: "priority",
+      title: "Order Number",
+      dataIndex: "order_number",
+      key: "orderNumber",
     },
     {
       title: "Source Address",
@@ -81,6 +71,21 @@ const OrderTable = () => {
       render: (record) => record?.split("T")[0],
     },
     {
+      title: "Stop duration",
+      dataIndex: "stop_time",
+      key: "stop_time",
+    },
+    {
+      title: "Tracking code",
+      dataIndex: "code",
+      key: "code",
+    },
+    {
+      title: "Order type",
+      dataIndex: "order_type",
+      key: "orderType",
+    },
+    {
       title: "Delivery Time From",
       dataIndex: "delivery_time_from",
       key: "deliveryTimeFrom",
@@ -96,9 +101,9 @@ const OrderTable = () => {
       key: "quantity",
     },
     {
-      title: "Stop duration",
-      dataIndex: "stop_time",
-      key: "stop_time",
+      title: "Priority",
+      dataIndex: "priority",
+      key: "priority",
     },
     {
       title: "Assigned Driver",
