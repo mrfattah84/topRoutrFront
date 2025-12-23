@@ -74,6 +74,7 @@ export const fleetApi = apiSlice.injectEndpoints({
       },
     }),
     getDriverUsers: builder.query({
+      providesTags: ["User"],
       query: () => ({
         url: "auth/profiles/",
       }),
@@ -105,6 +106,11 @@ export const fleetApi = apiSlice.injectEndpoints({
         body: data,
       }),
     }),
+    getZones: builder.query({
+      query: () => ({
+        url: "service-areas/service-areas/",
+      }),
+    }),
   }),
 });
 
@@ -119,4 +125,5 @@ export const {
   useGetDriverUsersQuery,
   useCreateCostsMutation,
   useCreateWorkScheduleMutation,
+  useGetZonesQuery
 } = fleetApi;

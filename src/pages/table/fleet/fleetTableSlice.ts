@@ -12,12 +12,12 @@ const fleetTableSlice = createSlice({
     },
   },
   selectors: {
-    selectedRowKeys: (state) => state.selectedFleets,
+    selectedFleetKeys: (state) => state.selectedFleets,
     selectDate: (state) => state.date,
   },
 });
 
 export const { setSelectedRowKeys, setDate } = fleetTableSlice.actions;
-export const { selectedRowKeys, selectDate } = fleetTableSlice.selectors;
+export const { selectedFleetKeys, selectDate } = fleetTableSlice.selectors;
 
 export default fleetTableSlice.reducer;

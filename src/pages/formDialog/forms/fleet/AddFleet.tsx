@@ -28,12 +28,15 @@ import {
 } from "./fleetApi";
 import { setForm } from "../../dialogSlice";
 import AddVehicle from "./AddVehicle";
+import AddDriver from "./AddDriver";
+import ZoneSelector from "./zoneSelector";
 
 const AddFleet = ({ id = null }) => {
   const [step, setStep] = useState(0);
   const [showAddOrigin, setShowAddOrigin] = useState(false);
   const [showAddDestination, setShowAddDestination] = useState(false);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [showAddDriver, setShowAddDriver] = useState(false);
 
   const [createFleet, { isLoading: isCreating }] = useCreateFleetMutation();
   const [updateFleet, { isLoading: isUpdating }] = useUpdateFleetMutation();
@@ -91,66 +94,33 @@ const AddFleet = ({ id = null }) => {
 
       // Deformat the API data back to form structure
       const deformattedData = {
-        // Basic fields - direct mapping
-        title: fleetData.title,
-        source_id: fleetData.source.uid,
-        destination_id: fleetData.destination.uid,
-        priority: fleetData.priority,
-        fleet_type: fleetData.fleet_type,
-        description: fleetData.description,
+        // Step 0 fields
+        vehicle: fleetData.vehicle?.id || fleetData.vehicle?.uuid,
+        driver: fleetData.driver_user?.id, // Assuming driver selector uses email as value
+        service_area: fleetData.service_area || [],
+        start_location: fleetData.start_location?.id,
+        end_location: fleetData.end_location?.id,
 
-        // Date field - keep as string (already in YYYY-MM-DD format)
-        fleet_date: fleetData.fleet_date,
-        delivery_date: fleetData.delivery_date,
-
-        // Time fields - convert string to dayjs
-        stop_time: parseTime(fleetData.stop_time),
-
-        // Time windows - convert delivery_time_from/to to times array structure
-        times:
-          fleetData.delivery_time_from && fleetData.delivery_time_to
+        // Working hours - convert work_schedule times to dayjs range
+        scedule:
+          fleetData.work_schedule?.start_time_1 &&
+          fleetData.work_schedule?.end_time_1
             ? [
-                {
-                  time: [
-                    parseTime(fleetData.delivery_time_from),
-                    parseTime(fleetData.delivery_time_to),
-                  ],
-                },
+                parseTime(fleetData.work_schedule.start_time_1),
+                parseTime(fleetData.work_schedule.end_time_1),
               ]
-            : [],
+            : undefined,
 
-        // Items - map fleet_item_id array back to Items structure
-        // Note: This assumes you have a way to fetch full item details from IDs
-        // If the API returns full fleet_items, map those instead
-        Items: fleetData.fleet_items
-          ? fleetData.fleet_items.map((item) => ({
-              itemId: item.id,
-              item_title: item.title,
-              description: item.description,
-              weight: item.weight,
-              length: item.length,
-              width: item.width,
-              height: item.height,
-              quantity: item.quantity,
-            }))
-          : fleetData.fleet_item_id
-          ? fleetData.fleet_item_id.map((itemId) => ({
-              itemId: itemId,
-              // You'll need to fetch other item details or leave them empty
-            }))
-          : [],
+        // Step 1 fields - Cost data
+        cost: {
+          fixed_cost: fleetData.cost?.fixed_cost,
+          per_km_cost: fleetData.cost?.per_km_cost,
+          per_hour_cost: fleetData.cost?.per_hour_cost,
+          per_hour_overtime_cost: fleetData.cost?.per_hour_overtime_cost,
+          distance_limit: fleetData.cost?.distance_limit,
+        },
 
-        // Optional fields that might be in the API response
-        activated: fleetData.activated,
-        driver_id: fleetData.driver_id,
-        assigned_to_id: fleetData.assigned_to_id,
-        cluster_id: fleetData.cluster_id,
-        file_id: fleetData.file_id,
-        delivery_fleet_sequence: fleetData.delivery_fleet_sequence,
-        delivery_fleet: fleetData.delivery_fleet,
-        delay_reason: fleetData.delay_reason,
-        assignment: fleetData.assignment,
-        shipment_type: fleetData.shipment_type,
+        staff_number: fleetData.staff_number,
       };
 
       // Set form values with deformatted data
@@ -205,25 +175,24 @@ const AddFleet = ({ id = null }) => {
 
         const cost = await createCosts(allFormData.cost).unwrap();
 
-        /*
         const scedule = await createWorkScedule({
           name: "idk",
           start_time_1: allFormData.scedule[0].format("HH:mm:ss"),
           end_time_1: allFormData.scedule[1].format("HH:mm:ss"),
         }).unwrap();
-        */
 
         // Format the data to match API schema
         const formattedData = {
           // Required fields
           driver_user: allFormData.driver,
           vehicle: allFormData.vehicle,
-          service_area: "c2903dc7-f4a6-492e-b832-043b36758946",
+          service_area: allFormData.service_area,
           owner: "304134c1-de91-4224-98f5-bc594946a8af",
           start_location: allFormData.start_location,
           end_location: allFormData.end_location,
           cost: cost.id,
-          work_schedule: "e9bc4f84-d4b0-422c-894a-7ccc0377417f", ///scedule.id,
+          work_schedule: scedule.id,
+          staff_number: allFormData.staff_number,
         };
 
         // Console log all collected data
@@ -302,32 +271,50 @@ const AddFleet = ({ id = null }) => {
               />
             </Form.Item>
           )}
-
-          <Form.Item
-            name="driver"
-            label="driver user"
-            rules={[
-              {
-                required: true,
-                message: "Please select a user",
-              },
-            ]}
-          >
-            <Select
-              showSearch
-              placeholder="Search and select user"
-              options={driverUsers}
-              loading={isDriverUsersLoading}
-            />
-          </Form.Item>
+          {showAddDriver ? (
+            <AddDriver form={form} show={setShowAddDriver} />
+          ) : (
+            <Form.Item
+              name="driver"
+              label="driver user"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select a user",
+                },
+              ]}
+            >
+              <Select
+                showSearch
+                placeholder="Search and select user"
+                options={driverUsers}
+                loading={isDriverUsersLoading}
+                popupRender={(menu) => (
+                  <>
+                    {menu}
+                    <div
+                      style={{
+                        padding: "8px",
+                        borderTop: "1px solid #f0f0f0",
+                      }}
+                    >
+                      <Button
+                        type="link"
+                        icon={<PlusOutlined />}
+                        onClick={() => setShowAddDriver(true)}
+                        style={{ width: "100%" }}
+                      >
+                        Add New DriverUser
+                      </Button>
+                    </div>
+                  </>
+                )}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item name="service_area" label="service area">
-            <Select
-              mode="multiple"
-              allowClear
-              placeholder="Please select"
-              options={regions}
-            />
+            <ZoneSelector form={form} />
           </Form.Item>
 
           {showAddOrigin ? (
@@ -436,13 +423,13 @@ const AddFleet = ({ id = null }) => {
             </Col>
             <Col span={12}>
               <Form.Item
-                label="Order limit"
-                name={["cost", "per_km_cost"]}
+                label="staff number"
+                name={"staff_number"}
                 rules={[
-                  { required: true, message: "Please enter order limit" },
+                  { required: true, message: "Please enter staff number" },
                 ]}
               >
-                <Input placeholder="e.g., 10" />
+                <Input placeholder="e.g., 1000" />
               </Form.Item>
             </Col>
           </Row>

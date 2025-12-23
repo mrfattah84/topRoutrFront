@@ -17,6 +17,7 @@ const AddVehicle = ({ show, form }) => {
         "length",
         "height",
         "width",
+        "limit_number_of_orders"
       ]);
 
       const vehicleData = form.getFieldsValue([
@@ -27,6 +28,7 @@ const AddVehicle = ({ show, form }) => {
         "length",
         "height",
         "width",
+        "limit_number_of_orders"
       ]);
       console.log("vehicle data:", vehicleData);
 
@@ -127,6 +129,15 @@ const AddVehicle = ({ show, form }) => {
           </Form.Item>
         </Col>
       </Row>
+      <Col span={12}>
+        <Form.Item
+          label="Order limit"
+          name="limit_number_of_orders"
+          rules={[{ required: true, message: "Please enter order limit" }]}
+        >
+          <Input placeholder="e.g., 10" />
+        </Form.Item>
+      </Col>
       <Form.Item>
         <Row gutter={8} style={{ width: "100%" }}>
           <Col span={12}>

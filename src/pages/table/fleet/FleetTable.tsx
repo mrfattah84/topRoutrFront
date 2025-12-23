@@ -8,7 +8,7 @@ import { setForm } from "../../formDialog/dialogSlice";
 import { useDispatch, useSelector } from "react-redux";
 import AddressVerify from "../order/AddressVerify";
 import {
-  selectedRowKeys,
+  selectedFleetKeys,
   selectDate,
   setSelectedRowKeys,
 } from "./fleetTableSlice";
@@ -17,7 +17,7 @@ const FleetTable = () => {
   const { data, isLoading } = useGetFleetsQuery();
   const [changeActive] = useChangeFleetActiveMutation();
   const dispatch = useDispatch();
-  const rows = useSelector(selectedRowKeys);
+  const rows = useSelector(selectedFleetKeys);
   const date = useSelector(selectDate);
   const rowSelection = {
     rows,
@@ -27,7 +27,7 @@ const FleetTable = () => {
   };
 
   const columns = [
-    {
+    /*{
       title: "Active",
       dataIndex: "is_active",
       key: "is_active",
@@ -42,62 +42,125 @@ const FleetTable = () => {
           <span className="toggle-slider"></span>
         </label>
       ),
+    },*/
+    {
+      title: "Vehicle name(label)",
+      dataIndex: ["vehicle", "name"],
+      key: "vehicleName",
     },
     {
-      title: "license",
-      dataIndex: "license_plate",
-      key: "license_plate",
+      title: "Vehicle type",
+      dataIndex: ["vehicle", "vehicle_type_detail", "code"],
+      key: "vehicleType",
     },
     {
-      title: "label",
-      dataIndex: "label",
-      key: "label",
+      title: "Cap(Weight)",
+      dataIndex: ["vehicle", "maxCapacity"],
+      key: "vehicleMaxCapacity",
     },
     {
-      title: "Vehicles Features",
-      dataIndex: "priority",
-      key: "priority",
+      title: "Length",
+      dataIndex: ["vehicle", "length"],
+      key: "vehicleLength",
     },
     {
-      title: "weight",
-      dataIndex: "weight",
-      key: "weight",
+      title: "Height",
+      dataIndex: ["vehicle", "height"],
+      key: "vehicleHeight",
     },
     {
-      title: "volume",
-      dataIndex: "volume",
-      key: "volume",
+      title: "Width",
+      dataIndex: ["vehicle", "width"],
+      key: "vehicleWidth",
     },
     {
-      title: "serial number",
-      dataIndex: "serial_number",
-      key: "serial_number",
-      render: (record) => record?.split("T")[0],
+      title: "Driver name",
+      dataIndex: "driver_user",
+      key: "driverName",
+      render: (record) => record?.first_name + " " + record?.last_name,
     },
     {
-      title: "name",
-      dataIndex: "name",
-      key: "name",
+      title: "Phone",
+      dataIndex: ["driver_user", "phone"],
+      key: "Phone",
     },
     {
-      title: "work hours",
-      dataIndex: "work_hours",
-      key: "work_hours",
+      title: "Staff number",
+      dataIndex: "staff_number",
+      key: "staffNumber",
     },
     {
-      title: "email",
-      dataIndex: "email",
-      key: "email",
+      title: "start location lat",
+      dataIndex: ["start_location", "latitude"],
+      key: "startLat",
     },
     {
-      title: "break",
-      dataIndex: "break_duration",
-      key: "break_duration",
+      title: "start location long",
+      dataIndex: ["start_location", "longitude"],
+      key: "startLong",
     },
     {
-      title: "time window",
-      dataIndex: "time_window",
-      key: "time_window",
+      title: "end location lat",
+      dataIndex: ["end_location", "latitude"],
+      key: "endLat",
+    },
+    {
+      title: "end location long",
+      dataIndex: ["end_location", "longitude"],
+      key: "endLong",
+    },
+    {
+      title: "Working hours",
+      dataIndex: "work_schedule",
+      key: "workingHours",
+      render: (record) =>
+        record
+          ? record?.start_time_1.slice(0, 5) +
+            " - " +
+            record?.end_time_1.slice(0, 5)
+          : "",
+    },
+    {
+      title: "Service Area",
+      dataIndex: "service_area",
+      key: "serviceArea",
+      render: (area) => {
+        let str = "";
+        area.forEach((item) => {
+          str += item.title;
+        });
+        return str;
+      },
+    },
+    {
+      title: "fixed cost",
+      dataIndex: ["cost", "fixed_cost"],
+      key: "fixedCost",
+    },
+    {
+      title: "Cost per KM",
+      dataIndex: ["cost", "per_km_cost"],
+      key: "perKM",
+    },
+    {
+      title: "Cost per hour",
+      dataIndex: ["cost", "per_hour_cost"],
+      key: "perHour",
+    },
+    {
+      title: "Cost per hour overtime",
+      dataIndex: ["cost", "per_hour_overtime_cost"],
+      key: "perHourOver",
+    },
+    {
+      title: "distance Limit(KM)",
+      dataIndex: ["cost", "distance_limit"],
+      key: "distanceLimit",
+    },
+    {
+      title: "Order limit",
+      dataIndex: ["vehicle", "limit_number_of_orders"],
+      key: "orderLimit",
     },
   ];
 

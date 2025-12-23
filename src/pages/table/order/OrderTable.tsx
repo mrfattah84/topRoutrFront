@@ -5,7 +5,7 @@ import { setForm } from "../../formDialog/dialogSlice";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectDate,
-  selectedRowKeys,
+  selectedOrderKeys,
   setSelectedRowKeys,
 } from "./orderTableSlice";
 import { useChangeActiveMutation } from "./orderTableApi";
@@ -15,7 +15,7 @@ const OrderTable = () => {
   const { data, isLoading } = useGetOrdersQuery();
   const [changeActive] = useChangeActiveMutation();
   const dispatch = useDispatch();
-  const rows = useSelector(selectedRowKeys);
+  const rows = useSelector(selectedOrderKeys);
   const date = useSelector(selectDate);
   const rowSelection = {
     rows,
@@ -119,7 +119,20 @@ const OrderTable = () => {
     if (!date) {
       return data;
     }
-    return data.filter((item) => item.created_at === date);
+    return data.filter((item) => {
+      console.log(date.payload, item.delivery_date);
+      const orderDate = item.delivery_date.split("-");
+
+      if (
+        orderDate[0] == date.payload.jy &&
+        orderDate[1] == date.payload.jm &&
+        orderDate[2] == date.payload.jd
+      ) {
+        return true;
+      }
+
+      return false;
+    });
   }, [data, date]);
 
   return (

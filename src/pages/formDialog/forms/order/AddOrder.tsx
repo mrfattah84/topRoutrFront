@@ -82,6 +82,8 @@ const AddOrder = ({ id = null }) => {
         return dayjs(timeString, "HH:mm");
       };
 
+      console.log(orderData);
+
       // Deformat the API data back to form structure
       const deformattedData = {
         // Basic fields - direct mapping
@@ -121,7 +123,7 @@ const AddOrder = ({ id = null }) => {
             }))
           : [],
 
-        assigned_to_id: orderData.driver.id,
+        assigned_to_id: orderData?.driver?.id,
         code: orderData.code,
       };
 

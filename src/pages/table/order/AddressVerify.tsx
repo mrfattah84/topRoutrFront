@@ -1,12 +1,15 @@
 import { Tag } from "antd";
+import customMarker from "./customMarker";
 
 const AddressVerify = ({ record }) => {
   if (!record) return null;
   return (
-    <Tag color={record.verified} key={record.uid}>
+    <div key={record.uid}>
       {record?.description || ""}
-    </Tag>
+      <img src={customMarker({ pinColor: record.verified })} alt="" />
+    </div>
   );
+  ///color={record.verified}
 };
 
 export default AddressVerify;

@@ -10,6 +10,7 @@ export const authApiSlice = apiSlice.injectEndpoints({
       }),
     }),
     signup: builder.mutation({
+      invalidatesTags: ["User"],
       query: (data) => ({
         url: "/auth/signup/",
         method: "POST",

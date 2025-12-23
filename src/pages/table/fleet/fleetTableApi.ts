@@ -5,7 +5,7 @@ export const fleetTableApi = apiSlice.injectEndpoints({
     getFleets: builder.query({
       providesTags: ["Fleet"],
       query: () => ({
-        url: "/vehicles/",
+        url: "/drivers/",
       }),
       transformResponse: (data) => {
         data.map((fleet) => {
@@ -17,7 +17,7 @@ export const fleetTableApi = apiSlice.injectEndpoints({
     changeFleetActive: builder.mutation({
       invalidatesTags: ["Fleet"],
       query: ({ id, activated }) => ({
-        url: `vehicles/${id}/`,
+        url: `drivers/${id}/`,
         method: "PATCH",
         body: { activated },
       }),

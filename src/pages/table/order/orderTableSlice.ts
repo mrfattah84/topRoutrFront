@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const orderTableSlice = createSlice({
   name: "orderTable",
-  initialState: { selectedOrders: [], date: "" },
+  initialState: { selectedOrders: [], date: {} },
   reducers: {
     setSelectedRowKeys: (state, payload) => {
       state.selectedOrders = payload;
@@ -12,12 +12,12 @@ const orderTableSlice = createSlice({
     },
   },
   selectors: {
-    selectedRowKeys: (state) => state.selectedOrders,
+    selectedOrderKeys: (state) => state.selectedOrders,
     selectDate: (state) => state.date,
   },
 });
 
 export const { setSelectedRowKeys, setDate } = orderTableSlice.actions;
-export const { selectedRowKeys, selectDate } = orderTableSlice.selectors;
+export const { selectedOrderKeys, selectDate } = orderTableSlice.selectors;
 
 export default orderTableSlice.reducer;

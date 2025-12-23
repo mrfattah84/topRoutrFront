@@ -12,17 +12,21 @@ import AddOrder from "./forms/order/AddOrder";
 import AddFleet from "./forms/fleet/AddFleet";
 import ImportFleet from "./forms/fleet/ImportFleet";
 import ImportOrder from "./forms/order/ImportOrder";
-import { selectedRowKeys, setDate } from "../table/order/orderTableSlice";
+import { selectedOrderKeys, setDate } from "../table/order/orderTableSlice";
+import { selectedFleetKeys } from "../table/fleet/fleetTableSlice";
 import { useDeleteOrderMutation } from "./forms/order/orderApi";
+import { useDeleteFleetMutation } from "./forms/fleet/fleetApi";
 
 const CustomDialog = () => {
   const [open, setOpen] = useState(false);
 
   const [deleteOrder] = useDeleteOrderMutation();
+  const [deleteFleet] = useDeleteFleetMutation();
 
   const menue = useSelector(selectCurrentSidebarMenue);
   const form = useSelector(selectCurrentForm);
-  const selected = useSelector(selectedRowKeys);
+  const selectedOrders = useSelector(selectedOrderKeys);
+  const SelectedFleets = useSelector(selectedFleetKeys);
 
   const dispatch = useDispatch();
 
@@ -41,8 +45,8 @@ const CustomDialog = () => {
   }, [menue, form, dispatch]);
 
   const handleDateSelect = (date, jalaali) => {
-    dispatch(setDate(`${jalaali.jd}-${jalaali.jm}-${jalaali.jy}`));
-    console.log(`Selected: ${jalaali.jd}/${jalaali.jm}/${jalaali.jy}`);
+    dispatch(setDate(jalaali));
+    console.log(`${jalaali.jy}-${jalaali.jm}-${jalaali.jd}`);
   };
 
   const handleCancel = () => {
@@ -63,14 +67,23 @@ const CustomDialog = () => {
         case "Add":
           return <AddFleet />;
         case "Edit":
-          if (selected.length() === 1) {
-            return <div></div>;
+          if (SelectedFleets?.payload?.length === 1 || false) {
+            return <AddFleet id={SelectedFleets.payload[0]} />;
           } else {
-            return null;
             dispatch(setForm(""));
+            return null;
           }
         case "Delete":
-          return <div></div>;
+          if (SelectedFleets?.payload?.length > 0 || false) {
+            SelectedFleets.payload.forEach((id) => {
+              deleteFleet(id);
+            });
+            dispatch(setForm(""));
+            return null;
+          } else {
+            dispatch(setForm(""));
+            return null;
+          }
         case "Import":
           return <ImportFleet />;
         case "Export":
@@ -85,16 +98,18 @@ const CustomDialog = () => {
         case "Add":
           return <AddOrder />;
         case "Edit":
-          console.log(selected);
-          if (selected?.payload?.length === 1 || false) {
-            return <AddOrder id={selected.payload[0]} />;
+          console.log(selectedOrders);
+          if (selectedOrders?.payload?.length === 1 || false) {
+            return <AddOrder id={selectedOrders.payload[0]} />;
           } else {
             dispatch(setForm(""));
             return null;
           }
         case "Delete":
-          if (selected?.payload?.length > 0 || false) {
-            deleteOrder(selected.payload[0]);
+          if (selectedOrders?.payload?.length > 0 || false) {
+            selectedOrders.payload.forEach((id) => {
+              deleteOrder(id);
+            });
             dispatch(setForm(""));
             return null;
           } else {
