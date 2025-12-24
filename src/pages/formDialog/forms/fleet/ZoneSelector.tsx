@@ -68,63 +68,116 @@ const ZoneSelector = ({ form }) => {
   }, []);
 
   useEffect(() => {
+    if (!mapContainer.current) return;
+
+    // Initialize map only once
+    if (!map.current) {
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: {
+          version: 8,
+          sources: {
+            osm: {
+              type: "raster",
+              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+              tileSize: 256,
+              attribution: "© OpenStreetMap contributors",
+            },
+          },
+          layers: [
+            {
+              id: "osm",
+              type: "raster",
+              source: "osm",
+              minzoom: 0,
+              maxzoom: 19,
+            },
+          ],
+        },
+        center: [51.42, 35.8],
+        zoom: 12,
+      });
+
+      map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    }
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!map.current || !data || isLoading) return;
 
-    map.current.on("load", () => {
+    const initializeZones = () => {
+      // Remove existing layers and source if they exist
+      if (map.current.getLayer("zones-outline")) {
+        map.current.removeLayer("zones-outline");
+      }
+      if (map.current.getLayer("zones-fill")) {
+        map.current.removeLayer("zones-fill");
+      }
+      if (map.current.getSource("zones")) {
+        map.current.removeSource("zones");
+      }
+
       // Add zones source
-      if (!map.current.getSource("zones")) {
-        map.current.addSource("zones", {
-          type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: data.map((zone) => ({
-              type: "Feature",
+      map.current.addSource("zones", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: data.map((zone) => ({
+            type: "Feature",
+            id: zone.id,
+            properties: {
               id: zone.id,
-              properties: {
-                id: zone.id,
-                title: zone.title,
-              },
-              geometry: {
-                type: "Polygon",
-                coordinates: [zone.coordinates],
-              },
-            })),
-          },
-        });
+              title: zone.title,
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [zone.coordinates],
+            },
+          })),
+        },
+      });
 
-        // Add fill layer
-        map.current.addLayer({
-          id: "zones-fill",
-          type: "fill",
-          source: "zones",
-          paint: {
-            "fill-color": [
-              "case",
-              ["in", ["get", "id"], ["literal", selectedZones]],
-              "#3b82f6",
-              "#94a3b8",
-            ],
-            "fill-opacity": 0.5,
-          },
-        });
+      // Add fill layer
+      map.current.addLayer({
+        id: "zones-fill",
+        type: "fill",
+        source: "zones",
+        paint: {
+          "fill-color": [
+            "case",
+            ["in", ["get", "id"], ["literal", selectedZones]],
+            "#3b82f6",
+            "#94a3b8",
+          ],
+          "fill-opacity": 0.5,
+        },
+      });
 
-        // Add outline layer
-        map.current.addLayer({
-          id: "zones-outline",
-          type: "line",
-          source: "zones",
-          paint: {
-            "line-color": [
-              "case",
-              ["in", ["get", "id"], ["literal", selectedZones]],
-              "#1d4ed8",
-              "#475569",
-            ],
-            "line-width": 2,
-          },
-        });
+      // Add outline layer
+      map.current.addLayer({
+        id: "zones-outline",
+        type: "line",
+        source: "zones",
+        paint: {
+          "line-color": [
+            "case",
+            ["in", ["get", "id"], ["literal", selectedZones]],
+            "#1d4ed8",
+            "#475569",
+          ],
+          "line-width": 2,
+        },
+      });
 
-        // Add click handler
+      // Add click handler (only once)
+      if (!map.current._zonesClickHandlerAdded) {
         map.current.on("click", "zones-fill", (e) => {
           if (e.features.length > 0) {
             const zoneId = e.features[0].properties.id;
@@ -138,7 +191,6 @@ const ZoneSelector = ({ form }) => {
           }
         });
 
-        // Change cursor on hover
         map.current.on("mouseenter", "zones-fill", () => {
           map.current.getCanvas().style.cursor = "pointer";
         });
@@ -147,19 +199,28 @@ const ZoneSelector = ({ form }) => {
           map.current.getCanvas().style.cursor = "";
         });
 
-        // Fit bounds to show all zones
-        if (data.length > 0) {
-          const bounds = new maplibregl.LngLatBounds();
-          data.forEach((zone) => {
-            zone.coordinates.forEach((coord) => {
-              bounds.extend(coord);
-            });
-          });
-          map.current.fitBounds(bounds, { padding: 50 });
-        }
+        map.current._zonesClickHandlerAdded = true;
       }
-    });
-  }, [data, isLoading]);
+
+      // Fit bounds to show all zones
+      if (data.length > 0) {
+        const bounds = new maplibregl.LngLatBounds();
+        data.forEach((zone) => {
+          zone.coordinates.forEach((coord) => {
+            bounds.extend(coord);
+          });
+        });
+        map.current.fitBounds(bounds, { padding: 50 });
+      }
+    };
+
+    // Check if map is already loaded
+    if (map.current.loaded()) {
+      initializeZones();
+    } else {
+      map.current.once("load", initializeZones);
+    }
+  }, [data, isLoading, selectedZones]);
 
   // Update zone colors when selection changes
   useEffect(() => {

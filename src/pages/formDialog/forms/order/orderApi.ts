@@ -108,8 +108,7 @@ export const orderApi = apiSlice.injectEndpoints({
           // IMPORTANT: You may need to adjust these properties to match your API response.
           // Based on your other code, `driver.id` and `driver.name` are likely candidates.
           value: driver.id,
-          label:
-            driver.driver_user.first_name + " " + driver.driver_user.last_name,
+          label: driver?.name,
         }));
         console.log("fleets transformed data:", transformedData);
         return transformedData;
@@ -121,7 +120,6 @@ export const orderApi = apiSlice.injectEndpoints({
         url: `address/`,
       }),
     }),
-    
   }),
 });
 

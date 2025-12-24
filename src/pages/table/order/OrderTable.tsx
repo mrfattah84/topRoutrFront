@@ -97,8 +97,18 @@ const OrderTable = () => {
     },
     {
       title: "Quantity",
-      dataIndex: "quantity",
+      dataIndex: "order_item_id",
       key: "quantity",
+      render: (records) => {
+        if (!records) {
+          return "N/A";
+        }
+        let q = 0;
+        records.forEach((record) => {
+          q += record.quantity;
+        });
+        return q;
+      },
     },
     {
       title: "Priority",
@@ -107,7 +117,7 @@ const OrderTable = () => {
     },
     {
       title: "Assigned Driver",
-      dataIndex: "driver_name",
+      dataIndex: ["driver", "cell_phone"],
       key: "scheduledDriver",
     },
   ];
@@ -116,17 +126,17 @@ const OrderTable = () => {
     if (!data) {
       return [];
     }
-    if (!date) {
+    if (!date.payload) {
       return data;
     }
     return data.filter((item) => {
       console.log(date.payload, item.delivery_date);
-      const orderDate = item.delivery_date.split("-");
+      const orderDate = item?.delivery_date.split("-");
 
       if (
-        orderDate[0] == date.payload.jy &&
-        orderDate[1] == date.payload.jm &&
-        orderDate[2] == date.payload.jd
+        orderDate[0] == date?.payload?.jy &&
+        orderDate[1] == date?.payload?.jm &&
+        orderDate[2] == date?.payload?.jd
       ) {
         return true;
       }

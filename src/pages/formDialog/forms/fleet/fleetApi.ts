@@ -42,7 +42,7 @@ export const fleetApi = apiSlice.injectEndpoints({
         data.map((item) => {
           newData.push({
             value: item.id,
-            label: item.name,
+            label: item?.name + " - " + item?.license_plate,
           });
         });
         console.log(newData);
@@ -125,5 +125,5 @@ export const {
   useGetDriverUsersQuery,
   useCreateCostsMutation,
   useCreateWorkScheduleMutation,
-  useGetZonesQuery
+  useGetZonesQuery,
 } = fleetApi;

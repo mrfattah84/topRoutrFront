@@ -16,8 +16,10 @@ import CustomDialog from "./formDialog/CustomDialog";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectCurrentSidebarMenue,
+  setForm,
   setSidebarMenue,
 } from "./formDialog/dialogSlice";
+import Result from "./result/Result";
 
 const { Header, Content, Sider, Footer } = Layout;
 
@@ -33,14 +35,14 @@ const HomePage = () => {
       onClick: () => dispatch(setSidebarMenue("data-calendar")),
     },
     {
-      key: "data-fleet",
-      label: "Fleet",
-      onClick: () => dispatch(setSidebarMenue("data-fleet")),
-    },
-    {
       key: "data-order",
       label: "Order",
       onClick: () => dispatch(setSidebarMenue("data-order")),
+    },
+    {
+      key: "data-fleet",
+      label: "Fleet",
+      onClick: () => dispatch(setSidebarMenue("data-fleet")),
     },
   ];
 
@@ -55,62 +57,64 @@ const HomePage = () => {
           src={"./logo.svg"}
           alt="logo"
           className="m-auto mt-5"
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/home")}
         />
-        <Menu
-          mode="inline"
-          defaultSelectedKeys={["1"]}
-          defaultOpenKeys={["sub1"]}
-          style={{ borderInlineEnd: 0, background: "#F2F2F2" }}
-          items={[
-            {
-              key: "1",
-              label: "Data",
-              icon: <FileOutlined />,
-              children: dataMenuItems,
-            },
-            {
-              key: "2",
-              label: "Result",
-              icon: <ContainerOutlined />,
-              children: [
-                { key: "result-calendar", label: "Calendar" },
-                { key: "result-fleet", label: "Fleet" },
-                { key: "result-order", label: "Order" },
-              ],
-            },
-            {
-              key: "3",
-              label: "Live",
-              icon: <FieldTimeOutlined />,
-              children: [
-                { key: "live-calendar", label: "Calendar" },
-                { key: "live-fleet", label: "Fleet" },
-                { key: "live-order", label: "Order" },
-              ],
-            },
-            {
-              key: "4",
-              label: "Analytics",
-              icon: <BarChartOutlined />,
-              children: [
-                { key: "analytics-calendar", label: "Calendar" },
-                { key: "analytics-fleet", label: "Fleet" },
-                { key: "analytics-order", label: "Order" },
-              ],
-            },
-            {
-              key: "5",
-              label: "Administration",
-              icon: <UserOutlined />,
-              children: [
-                { key: "administration-calendar", label: "Calendar" },
-                { key: "administration-fleet", label: "Fleet" },
-                { key: "administration-order", label: "Order" },
-              ],
-            },
-          ]}
-        />
+        {menue == "result-add" || menue == "result-show" ? (
+          <Result />
+        ) : (
+          <Menu
+            mode="inline"
+            defaultSelectedKeys={["1"]}
+            defaultOpenKeys={["sub1"]}
+            style={{ borderInlineEnd: 0, background: "#F2F2F2" }}
+            items={[
+              {
+                key: "1",
+                label: "Data",
+                icon: <FileOutlined />,
+                children: dataMenuItems,
+              },
+              {
+                key: "2",
+                label: "Result",
+                icon: <ContainerOutlined />,
+                onClick: () => {
+                  dispatch(setSidebarMenue("result-add"));
+                },
+              },
+              {
+                key: "3",
+                label: "Live",
+                icon: <FieldTimeOutlined />,
+                children: [
+                  { key: "live-calendar", label: "Calendar" },
+                  { key: "live-fleet", label: "Fleet" },
+                  { key: "live-order", label: "Order" },
+                ],
+              },
+              {
+                key: "4",
+                label: "Analytics",
+                icon: <BarChartOutlined />,
+                children: [
+                  { key: "analytics-calendar", label: "Calendar" },
+                  { key: "analytics-fleet", label: "Fleet" },
+                  { key: "analytics-order", label: "Order" },
+                ],
+              },
+              {
+                key: "5",
+                label: "Administration",
+                icon: <UserOutlined />,
+                children: [
+                  { key: "administration-calendar", label: "Calendar" },
+                  { key: "administration-fleet", label: "Fleet" },
+                  { key: "administration-order", label: "Order" },
+                ],
+              },
+            ]}
+          />
+        )}
       </Sider>
       <Layout style={{ padding: "0 0 0 10px", background: "#FFFFFF" }}>
         <Header

@@ -1,6 +1,7 @@
 import { CalendarOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   Button,
+  Checkbox,
   Col,
   Form,
   Input,
@@ -96,7 +97,7 @@ const AddFleet = ({ id = null }) => {
       const deformattedData = {
         // Step 0 fields
         vehicle: fleetData.vehicle?.id || fleetData.vehicle?.uuid,
-        driver: fleetData.driver_user?.id, // Assuming driver selector uses email as value
+        driver: fleetData.driver?.id, // Assuming driver selector uses email as value
         service_area: fleetData.service_area || [],
         start_location: fleetData.start_location?.id,
         end_location: fleetData.end_location?.id,
@@ -335,6 +336,9 @@ const AddFleet = ({ id = null }) => {
               />
             </Form.Item>
           )}
+          <Form.Item name="depotStart">
+            <Checkbox>use depot as start</Checkbox>
+          </Form.Item>
 
           {showAddDestination ? (
             <Form.Item label="Add End Location">
@@ -354,6 +358,9 @@ const AddFleet = ({ id = null }) => {
               />
             </Form.Item>
           )}
+          <Form.Item name="depotEnd">
+            <Checkbox>use depot as end</Checkbox>
+          </Form.Item>
           <Form.Item label="Working hours" name="scedule">
             <TimePicker.RangePicker format={format} minuteStep={15} />
           </Form.Item>

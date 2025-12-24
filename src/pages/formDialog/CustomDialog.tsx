@@ -37,7 +37,7 @@ const CustomDialog = () => {
       setOpen(true);
       // Clear the menue selection after opening
       dispatch(setSidebarMenue(""));
-    } else if (menue && form) {
+    } else if (menue && form ) {
       setOpen(true);
     } else if (menue && !form) {
       setOpen(false);
@@ -124,8 +124,6 @@ const CustomDialog = () => {
           return <div>Order Form Content</div>;
       }
     }
-
-    return <div>Default Content</div>;
   };
 
   // Function to get the modal title
