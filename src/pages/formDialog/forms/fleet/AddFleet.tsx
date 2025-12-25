@@ -98,7 +98,6 @@ const AddFleet = ({ id = null }) => {
         // Step 0 fields
         vehicle: fleetData.vehicle?.id || fleetData.vehicle?.uuid,
         driver: fleetData.driver?.id, // Assuming driver selector uses email as value
-        service_area: fleetData.service_area || [],
         start_location: fleetData.start_location?.id,
         end_location: fleetData.end_location?.id,
 
@@ -120,8 +119,6 @@ const AddFleet = ({ id = null }) => {
           per_hour_overtime_cost: fleetData.cost?.per_hour_overtime_cost,
           distance_limit: fleetData.cost?.distance_limit,
         },
-
-        staff_number: fleetData.staff_number,
       };
 
       // Set form values with deformatted data
@@ -153,7 +150,6 @@ const AddFleet = ({ id = null }) => {
         await form.validateFields([
           "vehicle",
           "driver",
-          "service_area",
           "start_location",
           "end_location",
           "workingHours",
@@ -187,13 +183,11 @@ const AddFleet = ({ id = null }) => {
           // Required fields
           driver_user: allFormData.driver,
           vehicle: allFormData.vehicle,
-          service_area: allFormData.service_area,
           owner: "304134c1-de91-4224-98f5-bc594946a8af",
           start_location: allFormData.start_location,
           end_location: allFormData.end_location,
           cost: cost.id,
           work_schedule: scedule.id,
-          staff_number: allFormData.staff_number,
         };
 
         // Console log all collected data
@@ -314,10 +308,6 @@ const AddFleet = ({ id = null }) => {
             </Form.Item>
           )}
 
-           <Form.Item name="service_area" label="service area">
-            <ZoneSelector form={form} />
-          </Form.Item>
-
           {showAddOrigin ? (
             <Form.Item label="Add Start Location">
               <AddAddress setShowAddAddress={setShowAddOrigin} />
@@ -416,30 +406,14 @@ const AddFleet = ({ id = null }) => {
               </Form.Item>
             </Col>
           </Row>
-          <Row gutter={8} style={{ width: "100%" }}>
-            <Col span={12}>
-              <Form.Item
-                label="distance Limit(KM)"
-                name={["cost", "distance_limit"]}
-                rules={[
-                  { required: true, message: "Please enter distance limit" },
-                ]}
-              >
-                <Input placeholder="e.g., 1000" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="staff number"
-                name={"staff_number"}
-                rules={[
-                  { required: true, message: "Please enter staff number" },
-                ]}
-              >
-                <Input placeholder="e.g., 1000" />
-              </Form.Item>
-            </Col>
-          </Row>
+
+          <Form.Item
+            label="distance Limit(KM)"
+            name={["cost", "distance_limit"]}
+            rules={[{ required: true, message: "Please enter distance limit" }]}
+          >
+            <Input placeholder="e.g., 1000" />
+          </Form.Item>
         </>
       )}
       <Form.Item style={{ textAlign: "end" }}>

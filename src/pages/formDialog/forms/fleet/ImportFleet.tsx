@@ -28,7 +28,6 @@ const SYSTEM_COLUMNS = [
   { value: "width", label: "Width", required: false },
   { value: "driver_name", label: "Driver Name", required: false },
   { value: "cell_phone", label: "Cell Phone", required: false },
-  { value: "staff_number", label: "Staff Number", required: false },
   { value: "start_location_lat", label: "Start Location Lat", required: true },
   {
     value: "start_location_long",
@@ -39,7 +38,6 @@ const SYSTEM_COLUMNS = [
   { value: "end_location_long", label: "End Location Long", required: false },
   { value: "work_hour_start", label: "Working Hour Start", required: true },
   { value: "work_hour_end", label: "Working Hour End", required: true },
-  { value: "service_area", label: "Service Area", required: false },
   { value: "fixed_cost", label: "Fixed Cost", required: false },
   { value: "cost_per_km", label: "Cost per KM", required: false },
   { value: "cost_per_hour", label: "Cost per Hour", required: false },
@@ -69,7 +67,6 @@ const ImportFleet = () => {
   const [createFleet] = useCreateFleetMutation();
   const [createDriver] = useSignupMutation();
   const [createAddress] = useAddAddressMutation();
-  const { data: serviceAreas } = useGetZonesQuery();
   const { data: preDefinedLocations } = useGetAddressesQuery();
   const { data: vehicleTypes = [] } = useGetVehicleTypesQuery();
 
@@ -206,25 +203,6 @@ const ImportFleet = () => {
     }
   };
 
-  const findServiceAreaId = (serviceAreaText: string) => {
-    if (!serviceAreaText) return null;
-
-    // Split by comma for multiple areas
-    const areas = serviceAreaText.split(",").map((a) => a.trim());
-
-    // Try to match each area
-    const matchedIds = [];
-    for (const area of areas) {
-      const match = serviceAreas.find((sa) => {
-        const titleNumber = sa.title?.match(/\d+/)?.[0];
-        const areaNumber = area.match(/\d+/)?.[0];
-        return titleNumber && areaNumber && titleNumber === areaNumber;
-      });
-      if (match) matchedIds.push(match.uid);
-    }
-
-    return matchedIds.length > 0 ? matchedIds[0] : null;
-  };
 
   const findVehicleTypeId = (vehicleTypeText: string) => {
     if (!vehicleTypeText || !vehicleTypes.length) return null;
@@ -384,14 +362,10 @@ const ImportFleet = () => {
             driverUserId = driver.uid || driver.id;
           }
 
-          // 8. Find service area
-          const serviceAreaId = findServiceAreaId(fleet.service_area);
-
           // 9. Create fleet
           await createFleet({
             driver_user: driverUserId,
             vehicle: vehicle.uid || vehicle.id,
-            service_area_id: serviceAreaId,
             start_location: startLocationId,
             start_location_latitude: fleet.start_location_lat,
             start_location_longitude: fleet.start_location_long,
@@ -402,7 +376,6 @@ const ImportFleet = () => {
             work_schedule_id: workSchedule.uid || workSchedule.id,
             name: fleet.name,
             cell_phone: fleet.cell_phone || "",
-            staff_number: fleet.staff_number || "",
             use_depot_as_start: false,
             use_last_order_as_end: !endLocationId,
             end_route: true,
@@ -476,14 +449,12 @@ const ImportFleet = () => {
       "Width",
       "Driver name",
       "Cell phone",
-      "Staff number",
       "start location lat",
       "Start location long",
       "End location lat",
       "End location long",
       "Working hour start",
       "Working hour End",
-      "Service Area",
       "fixed cost",
       "Cost per KM",
       "Cost per hour",

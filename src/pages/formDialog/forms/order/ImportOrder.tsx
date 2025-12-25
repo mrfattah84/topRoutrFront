@@ -9,6 +9,7 @@ import {
   Space,
   Table,
   Input,
+  TimePicker,
 } from "antd";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
@@ -22,6 +23,8 @@ import {
   useGetDefinedLatLonsQuery,
 } from "./orderApi";
 import dayjs from "dayjs";
+import AddAddress from "../AddAddress";
+import AddressSelector from "../AddressSelector";
 
 const { Dragger } = Upload;
 
@@ -58,12 +61,6 @@ const SYSTEM_COLUMNS = [
     needsCreation: false,
   },
   {
-    value: "order_type",
-    label: "Order Type",
-    required: true,
-    needsCreation: false,
-  },
-  {
     value: "code",
     label: "Delivery code",
     required: false,
@@ -81,27 +78,7 @@ const SYSTEM_COLUMNS = [
     required: false,
     needsCreation: false,
   },
-  {
-    value: "assigned_to",
-    label: "Assigned to fleet",
-    required: false,
-    needsCreation: false,
-  },
 
-  ///orderItem
-  { value: "length", label: "Length", required: false, needsCreation: false },
-  {
-    value: "width",
-    label: "Width",
-    required: false,
-    needsCreation: false,
-  },
-  {
-    value: "height",
-    label: "Height",
-    required: false,
-    needsCreation: false,
-  },
   {
     value: "volume",
     label: "Volume(m3)",
@@ -171,6 +148,7 @@ const ImportOrder = () => {
     {}
   );
   const [allFileData, setAllFileData] = useState<any[]>([]);
+  const [showAddOrigin, setShowAddOrigin] = useState(false);
 
   const { data: preDefinedLatLongs } = useGetDefinedLatLonsQuery();
   const [createAddress] = useAddAddressMutation();
@@ -345,11 +323,13 @@ const ImportOrder = () => {
       // 3. Handle any errors and show progress
 
       transformedOrders.forEach(async (order) => {
-        let sourceId = null;
+        let sourceId = form.getFieldValue("source_id");
         let destinationId = null;
 
         preDefinedLatLongs.forEach((Address) => {
           if (
+            order?.source_latitude &&
+            order?.source_longitude &&
             Address.latitude == order.source_latitude &&
             Address.longitude == order.source_longitude
           ) {
@@ -364,7 +344,7 @@ const ImportOrder = () => {
           }
         });
 
-        if (!sourceId) {
+        if (order?.source_latitude && order?.source_longitude) {
           sourceId = await createAddress({
             description: order.source_address_text || "UPLOAD",
             location_data: {
@@ -389,31 +369,34 @@ const ImportOrder = () => {
           description: "UPLOAD",
           volume: order.volume || null,
           weight: order.weight || null,
-          length: order.length || null,
-          width: order.width || null,
-          height: order.height || null,
         });
 
-        const driverId = "";
+        const formatted_delivery_date = order.delivery_date.replaceAll(
+          "/",
+          "-"
+        );
 
         createOrder({
           source_id: sourceId?.uid || sourceId,
           destination_id: destinationId?.uid || destinationId,
-          driver_id: driverId,
-          delivery_date: order.delivery_date,
+          delivery_date: formatted_delivery_date,
           delivery_time_to:
             dayjs()
-              .second(order.delivery_time_to * 86400)
+              .second((parseInt(order.delivery_time_to) % 1) * 86400)
               .format("HH:mm") || null,
           delivery_time_from:
             dayjs()
-              .second(parseInt(order.delivery_time_from) * 86400)
+              .second((parseInt(order.delivery_time_from) % 1) * 86400)
               .format("HH:mm") || null,
-          stop_time: dayjs().minute(parseInt(order.stop_time)).format("HH:mm"),
+          stop_time: order?.stop_time
+            ? dayjs().minute(parseInt(order.stop_time)).format("HH:mm")
+            : form?.getFieldValue("stop_time")
+            ? form?.getFieldValue("stop_time")
+            : "00:05",
           order_number: order.order_number,
           code: order.code || null,
           description: "created by UPLOAD",
-          order_type: order.order_type,
+          order_type: "delivery",
           order_date: order.order_date || null,
           priority: order.priority || null,
           order_item_id: [
@@ -555,9 +538,33 @@ const ImportOrder = () => {
               <ul style={{ marginBottom: 0 }}>
                 <li>
                   <strong>Source Addresses:</strong>{" "}
-                  {hasSourceAddress
-                    ? "✓ Will be created from mapped address data"
-                    : "⚠️ No address data mapped - please ensure source_address_text or coordinates are mapped"}
+                  {hasSourceAddress ? (
+                    "✓ Will be created from mapped address data"
+                  ) : showAddOrigin ? (
+                    <Form.Item label="Add Origin Address">
+                      <AddAddress
+                        show={setShowAddOrigin}
+                        form={form}
+                        type="source_id"
+                      />
+                    </Form.Item>
+                  ) : (
+                    <Form.Item
+                      label="Origin Location"
+                      name="source_id"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please select origin location",
+                        },
+                      ]}
+                    >
+                      <AddressSelector
+                        name="source_id"
+                        onAddAddress={() => setShowAddOrigin(true)}
+                      />
+                    </Form.Item>
+                  )}
                 </li>
                 <li>
                   <strong>Destination Addresses:</strong>{" "}
@@ -716,6 +723,18 @@ const ImportOrder = () => {
           />
 
           {getAddressMappingInstructions()}
+
+          <Form.Item
+            label="Stop duration"
+            name="stop_time"
+            rules={[{ required: true, message: "Please set the stop time" }]}
+          >
+            <TimePicker
+              format={"HH:mm:ss"}
+              style={{ width: "100%" }}
+              showNow={false}
+            />
+          </Form.Item>
 
           <div style={{ marginBottom: 16 }}>
             <strong>Import Summary:</strong>

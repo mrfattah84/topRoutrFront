@@ -23,6 +23,8 @@ import {
 } from "./optimizationApi";
 import OptimizationResultPanel from "./OptimizationResultPanel";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { setSidebarMenue } from "../formDialog/dialogSlice";
 
 const { Title, Text } = Typography;
 
@@ -54,7 +56,7 @@ const getTimeEstimate = (elapsedTime: number): string => {
   }
 };
 
-const AddForm = () => {
+const AddForm = ({ setResultData }) => {
   const [formData, setFormData] = useState({
     no_balance: false,
     balance_order_count: false,
@@ -71,7 +73,6 @@ const AddForm = () => {
   const [pollingStartTime, setPollingStartTime] = useState<number | null>(null);
   const [maxPollingTime] = useState(300000);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [resultData, setResultData] = useState<any>(null);
   const [excludedOrders, setExcludedOrders] = useState<any[]>([]);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodingProgress, setGeocodingProgress] = useState({
@@ -90,6 +91,7 @@ const AddForm = () => {
   const { data: orders } = useGetOrdersForOptimizationQuery({});
   const { data: drivers } = useGetDriversForOptimizationQuery({});
   const [updateAddress] = useUpdateAddressMutation();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (defaultConfig) {
@@ -136,6 +138,7 @@ const AddForm = () => {
 
             if (status === "completed" && result.result_data) {
               setResultData(result.result_data);
+              dispatch(setSidebarMenue("result-show"));
               message.success("Optimization completed successfully!");
             } else if (status === "failed") {
               message.error(result.error_message || "Optimization failed");
@@ -342,8 +345,6 @@ const AddForm = () => {
         });
       }
 
-      setVehicleNames(names);
-
       if (driverIdsWithVehicles.length === 0) {
         message.error("No drivers with vehicles found");
         setIsRunning(false);
@@ -379,17 +380,10 @@ const AddForm = () => {
     }
   };
 
-  const handleShowRoute = (vehicleId: string) => {
-    console.log("Show route for vehicle:", vehicleId);
-    message.info(
-      `Showing route for vehicle ${vehicleNames[vehicleId] || vehicleId}`
-    );
-  };
-
   return (
     <div className="p-5 pt-0">
       <Title level={4} className="m-0! mb-2! !font-bold !text-[#0A214A]">
-        Balance & Policy Configuration
+        Policy Configuration
       </Title>
 
       <div className="flex flex-col gap-2">
@@ -485,60 +479,6 @@ const AddForm = () => {
         )}
 
         <div>
-          <Title level={4} className=" !text-base !font-bold !text-[#0A214A]">
-            Balance:
-          </Title>
-          <Space orientation="vertical" className="w-full">
-            <Checkbox
-              checked={formData.no_balance}
-              onChange={(e) => handleChange("no_balance", e.target.checked)}
-            >
-              No Balance
-            </Checkbox>
-            <Checkbox
-              checked={formData.balance_order_count}
-              onChange={(e) =>
-                handleChange("balance_order_count", e.target.checked)
-              }
-            >
-              Balancing number of the order per fleets
-            </Checkbox>
-            <Checkbox
-              checked={formData.balance_working_time}
-              onChange={(e) =>
-                handleChange("balance_working_time", e.target.checked)
-              }
-            >
-              Balancing working time of the fleets
-            </Checkbox>
-            <Checkbox
-              checked={formData.allow_multiple_depot_visits}
-              onChange={(e) =>
-                handleChange("allow_multiple_depot_visits", e.target.checked)
-              }
-            >
-              Fleet can visit the depot more than one time
-            </Checkbox>
-            <div>
-              <Text>Depot visit time default:</Text>
-              <div className="flex gap-1 items-center">
-                <InputNumber
-                  min={0}
-                  value={formData.depot_visit_time_default}
-                  onChange={(value) =>
-                    handleChange("depot_visit_time_default", value)
-                  }
-                />
-                <Text className="mt-0">min</Text>
-              </div>
-            </div>
-          </Space>
-        </div>
-
-        <div>
-          <Title level={4} className="!text-base !font-bold !text-[#0A214A]">
-            Policy:
-          </Title>
           <Radio.Group
             value={formData.policy}
             onChange={(e) => handleChange("policy", e.target.value)}
@@ -547,23 +487,6 @@ const AddForm = () => {
             <Radio value="agile">Agile</Radio>
             <Radio value="trade_off">Trade off</Radio>
           </Radio.Group>
-          {formData.show_all_scenarios && (
-            <Alert
-              title="see all 3 scenarios and then select one plan to run"
-              type="success"
-              showIcon
-              icon={<CheckCircleOutlined />}
-            />
-          )}
-          <Checkbox
-            checked={formData.show_all_scenarios}
-            onChange={(e) =>
-              handleChange("show_all_scenarios", e.target.checked)
-            }
-            className="mt-2!"
-          >
-            Show all scenarios
-          </Checkbox>
         </div>
 
         <div className="flex gap-2 mt-2">
@@ -584,15 +507,6 @@ const AddForm = () => {
           </Button>
         </div>
       </div>
-
-      {resultData && (
-        <OptimizationResultPanel
-          resultData={resultData}
-          defaultScenario={formData.policy}
-          onShowRoute={handleShowRoute}
-          vehicleNames={vehicleNames}
-        />
-      )}
     </div>
   );
 };

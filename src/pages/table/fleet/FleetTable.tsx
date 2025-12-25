@@ -120,6 +120,7 @@ const FleetTable = () => {
             record?.end_time_1.slice(0, 5)
           : "",
     },
+    /*
     {
       title: "Service Area",
       dataIndex: "service_area",
@@ -132,6 +133,7 @@ const FleetTable = () => {
         return str;
       },
     },
+    */
     {
       title: "fixed cost",
       dataIndex: ["cost", "fixed_cost"],

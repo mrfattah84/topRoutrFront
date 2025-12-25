@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Button, Flex, Space, Switch, Table, Tag } from "antd";
 import { useGetOrdersQuery } from "./orderTableApi";
 import { setForm } from "../../formDialog/dialogSlice";
@@ -10,17 +10,48 @@ import {
 } from "./orderTableSlice";
 import { useChangeActiveMutation } from "./orderTableApi";
 import AddressVerify from "./AddressVerify";
+import Search from "antd/es/input/Search";
+import { setPoints, setRoutes } from "../../map/mapSlice";
 
 const OrderTable = () => {
   const { data, isLoading } = useGetOrdersQuery();
+  const [searchText, setSearchText] = useState("");
   const [changeActive] = useChangeActiveMutation();
   const dispatch = useDispatch();
   const rows = useSelector(selectedOrderKeys);
   const date = useSelector(selectDate);
   const rowSelection = {
     rows,
-    onChange: (rows) => {
+    onChange: (rows, selectedRows) => {
       dispatch(setSelectedRowKeys(rows));
+      dispatch(setPoints());
+      dispatch(setRoutes());
+      const p = [];
+      const r = [];
+      selectedRows.forEach((element) => {
+        p.push({
+          id: element.source.uid,
+          name: element.source.title,
+          coords: [element.source.longitude, element.source.latitude],
+          description: element.source.description,
+        });
+        p.push({
+          id: element.destination.uid,
+          name: element.destination.title,
+          coords: [element.destination.longitude, element.destination.latitude],
+          description: element.destination.description,
+        });
+        r.push({
+          id: element.order_number,
+          color: "#ff0000",
+          coordinates: [
+            [element.source.longitude, element.source.latitude],
+            [element.destination.longitude, element.destination.latitude],
+          ],
+        });
+      });
+      dispatch(setPoints(p));
+      dispatch(setRoutes(r));
     },
   };
 
@@ -101,7 +132,7 @@ const OrderTable = () => {
       key: "quantity",
       render: (records) => {
         if (!records) {
-          return "N/A";
+          return 1;
         }
         let q = 0;
         records.forEach((record) => {
@@ -115,40 +146,48 @@ const OrderTable = () => {
       dataIndex: "priority",
       key: "priority",
     },
-    {
-      title: "Assigned Driver",
-      dataIndex: ["driver", "cell_phone"],
-      key: "scheduledDriver",
-    },
   ];
+
+  const searchString = (source: string, query: string) => {
+    console.log("search", source, query);
+
+    // Convert both to lowercase and check if the source includes the query
+    return source.toLowerCase().includes(query.toLowerCase());
+  };
 
   const filteredData = useMemo(() => {
     if (!data) {
       return [];
     }
-    if (!date.payload) {
+    if (!date.payload && !searchText) {
       return data;
     }
     return data.filter((item) => {
-      console.log(date.payload, item.delivery_date);
       const orderDate = item?.delivery_date.split("-");
 
       if (
-        orderDate[0] == date?.payload?.jy &&
-        orderDate[1] == date?.payload?.jm &&
-        orderDate[2] == date?.payload?.jd
+        !date.payload ||
+        (orderDate[0] == date?.payload?.jy &&
+          orderDate[1] == date?.payload?.jm &&
+          orderDate[2] == date?.payload?.jd)
       ) {
-        return true;
+        if (
+          searchString(item.destination.description || "", searchText) ||
+          searchString(item.destination.title || "", searchText) ||
+          searchString(item.order_number || "", searchText)
+        ) {
+          return true;
+        }
       }
 
       return false;
     });
-  }, [data, date]);
+  }, [data, date, searchText]);
 
   return (
     <div className="relative">
       <div
-        className="flex gap-2 bg-[#B5BAB9] p-2 rounded-t-md w-min absolute -top-12 left-0"
+        className="flex gap-2 bg-[#B5BAB9] p-2 rounded-t-md w-min absolute top-0 left-0 z-10"
         onClick={(e) => dispatch(setForm(e.target.innerText))}
       >
         <Button color="default" variant="text">
@@ -166,14 +205,25 @@ const OrderTable = () => {
         <Button color="default" variant="text">
           Export
         </Button>
+        <Search
+          placeholder="input search text"
+          enterButton
+          style={{ width: 200 }}
+          onSearch={(value) => {
+            setSearchText(value);
+          }}
+        />
       </div>
       <Table
         rowSelection={rowSelection}
         columns={columns}
         dataSource={filteredData}
         loading={isLoading}
-        pagination={{ placement: ["none", "none"] }}
-        scroll={{ x: "max-content" }}
+        pagination={{
+          placement: ["topEnd"],
+          size: "small",
+        }}
+        scroll={{ x: "max-content", y: 200 }}
       />
     </div>
   );

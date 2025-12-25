@@ -12,7 +12,6 @@ const CustomMarker = ({ number = "", pinColor = "#5a5a5a" }) => {
 
   if (pinColor == "red") {
     pinColor = "#FF0000";
-    console.log(pinColor);
   }
 
   return (
