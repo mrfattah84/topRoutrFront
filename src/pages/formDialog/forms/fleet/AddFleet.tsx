@@ -314,7 +314,7 @@ const AddFleet = ({ id = null }) => {
             </Form.Item>
           )}
 
-          <Form.Item name="service_area" label="service area">
+           <Form.Item name="service_area" label="service area">
             <ZoneSelector form={form} />
           </Form.Item>
 

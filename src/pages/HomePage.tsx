@@ -49,7 +49,7 @@ const HomePage = () => {
   return (
     <Layout className="h-full p-5" style={{ background: "#FFFFFF" }}>
       <Sider
-        width={200}
+        width={300}
         style={{ background: "#F2F2F2" }}
         className="rounded-xl"
       >

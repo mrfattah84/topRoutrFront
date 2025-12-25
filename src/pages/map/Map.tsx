@@ -34,6 +34,7 @@ const Map = () => {
       },
     });
   }, []);
+
   return <div ref={mapContainer} className="w-full h-full rounded-2xl" />;
 };
 

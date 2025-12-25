@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { getVehicleColors } from "../utils/vehicleColors";
+import { getVehicleColors } from "./vehicleColors";
 
 // Helper function to format distance
 const formatDistance = (meters) => {

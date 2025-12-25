@@ -126,7 +126,7 @@ const FleetTable = () => {
       key: "serviceArea",
       render: (area) => {
         let str = "";
-        area.forEach((item) => {
+        area?.forEach((item) => {
           str += item.title;
         });
         return str;
