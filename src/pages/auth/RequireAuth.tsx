@@ -8,9 +8,8 @@ const RequireAuth = () => {
 
   console.log(token);
 
-  
   ///unstring token for working auth
-  return 'token' ? (
+  return token ? (
     <Outlet />
   ) : (
     <Navigate to="/login" state={{ from: location }} replace />
