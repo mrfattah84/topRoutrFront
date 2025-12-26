@@ -16,7 +16,7 @@ const Result = () => {
       console.log(123123);
       return <AddForm setResultData={setResultData} />;
     case "result-show":
-      return <OptimizationResultPanel />;
+      return <OptimizationResultPanel resultData={resultData} />;
   }
 };
 

@@ -1,17 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Card,
-  Badge,
-  Tag,
-  Button,
-  Divider,
-  Typography,
-  Statistic,
-  Row,
-  Col,
-  Space,
-  Collapse,
-} from "antd";
+import { Card, Badge, Tag, Button, Typography, Row, Col, Collapse } from "antd";
 import {
   TruckOutlined,
   EnvironmentOutlined,
@@ -20,11 +8,16 @@ import {
   WarningOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
+import { useGetVehicleNamesQuery } from "./optimizationApi";
+// Import Redux hooks and actions
+import { useDispatch } from "react-redux";
+import { setRoutes } from "../map/mapSlice"; // Ensure path is correct
+import { decodePolyline6 } from "./polyLine"; // Ensure this utility exists
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 
-// Vehicle color palette
+// ... (Keep your existing formatDistance, formatDuration, getVehicleColors helpers here) ...
 const getVehicleColors = (index: number) => {
   const colorPalette = [
     { primary: "#3b82f6", secondary: "#dbeafe" },
@@ -39,72 +32,35 @@ const getVehicleColors = (index: number) => {
   return colorPalette[index % colorPalette.length];
 };
 
-// Helper functions
-const formatDistance = (meters: number): string => {
-  if (!meters || meters === 0) return "0 m";
-  if (meters < 1000) return `${Math.round(meters)} m`;
-  return `${(meters / 1000).toFixed(2)} km`;
+const formatDistance = (meters: number) =>
+  meters < 1000
+    ? `${Math.round(meters)} m`
+    : `${(meters / 1000).toFixed(2)} km`;
+const formatDuration = (seconds: number) => {
+  if (!seconds) return "0s";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m ${seconds % 60}s`;
 };
-
-const formatDuration = (seconds: number): string => {
-  if (!seconds || seconds === 0) return "0s";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-};
-
-interface Vehicle {
-  id: string;
-  name: string;
-  orders: any[];
-  distance: number;
-  duration: number;
-  service: number;
-  waiting: number;
-  load: {
-    weight?: number;
-    volume?: number;
-  };
-  cost: number;
-  steps: any[];
-  orderedLocationIds: string[];
-}
 
 interface OptimizationResultPanelProps {
   resultData: any;
-  defaultScenario?: string;
-  vehicleNames?: Record<string, string>;
 }
 
 const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
   resultData,
-  defaultScenario = "economy",
-  vehicleNames = {},
 }) => {
-  const scenarios = [
-    { id: "economy", label: "Economy", color: "success" },
-    { id: "agile", label: "Agile", color: "processing" },
-    { id: "trade_off", label: "Trade off", color: "warning" },
-  ];
+  const dispatch = useDispatch(); // Hook to dispatch actions
+  const { data: vehicleNames } = useGetVehicleNamesQuery();
 
-  const [selectedScenario, setSelectedScenario] = useState(
-    defaultScenario || "economy"
-  );
-
-  const vehicles: Vehicle[] = useMemo(() => {
+  const vehicles = useMemo(() => {
     const routes = resultData?.routes || {};
     const solution = resultData?.solution || {};
     return Object.keys(solution).map((vehicleId) => {
       const route = routes[vehicleId] || {};
       return {
         id: vehicleId,
-        name: vehicleNames[vehicleId] || vehicleId,
+        name: vehicleNames?.[vehicleId] || vehicleId, // Fixed vehicleName access
         orders: solution[vehicleId] || [],
         distance: route.distance_m || 0,
         duration: route.duration_s || 0,
@@ -113,113 +69,48 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
         load: route.load || {},
         cost: route.cost || 0,
         steps: route.steps || [],
-        orderedLocationIds: route.ordered_location_ids || [],
+        geometry: route.geometry, // Important: capture geometry
       };
     });
   }, [resultData, vehicleNames]);
 
   const summary = resultData?.summary || {};
 
-  const getScenarioColor = (scenarioId: string) => {
-    const colors = {
-      economy: {
-        bg: "bg-green-50",
-        border: "border-green-500",
-        text: "text-green-600",
-      },
-      agile: {
-        bg: "bg-blue-50",
-        border: "border-blue-500",
-        text: "text-blue-600",
-      },
-      trade_off: {
-        bg: "bg-amber-50",
-        border: "border-amber-500",
-        text: "text-amber-600",
-      },
-    };
-    return colors[scenarioId as keyof typeof colors] || colors.economy;
-  };
+  const handleShowRoute = (vehicleId: string, index: number) => {
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    if (!vehicle) return;
 
-  const renderScenarioCard = (scenario: { id: string; label: string }) => {
-    const isActive = selectedScenario === scenario.id;
-    const colors = getScenarioColor(scenario.id);
+    // Use the utility we just fixed
+    let coords = decodePolyline6(vehicle.geometry);
 
-    return (
-      <Card
-        key={scenario.id}
-        className={`cursor-pointer transition-all duration-200 ${
-          isActive
-            ? `${colors.bg} ${colors.border} border-2 shadow-lg`
-            : "border border-gray-200 hover:shadow-md"
-        }`}
-        onClick={() => setSelectedScenario(scenario.id)}
-        bodyStyle={{ padding: "16px" }}
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <div
-            className={`w-3 h-3 rounded-full ${
-              isActive
-                ? `bg-${
-                    scenario.id === "economy"
-                      ? "green"
-                      : scenario.id === "agile"
-                      ? "blue"
-                      : "amber"
-                  }-500`
-                : "bg-gray-400"
-            } ${isActive ? "shadow-md" : ""}`}
-          />
-          <Text
-            className={`font-bold text-base ${
-              isActive ? colors.text : "text-gray-900"
-            }`}
-          >
-            {scenario.label}
-          </Text>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            type={isActive ? "primary" : "default"}
-            size="small"
-            className="flex-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedScenario(scenario.id);
-            }}
-          >
-            Details
-          </Button>
-          <Button
-            type="default"
-            size="small"
-            icon={<EnvironmentOutlined />}
-            className="flex-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (
-                onShowRoute &&
-                scenario.id === selectedScenario &&
-                vehicles.length > 0
-              ) {
-                vehicles.forEach((vehicle) => onShowRoute(vehicle.id));
-              }
-            }}
-          >
-            Show Route
-          </Button>
-        </div>
-      </Card>
+    // Fallback to steps if geometry is missing
+    if (coords.length === 0 && vehicle.steps) {
+      coords = vehicle.steps.map((s: any) => ({
+        lng: s.location[0],
+        lat: s.location[1],
+      }));
+    }
+
+    // Final check: If coordinates are still 'small' (3.5 instead of 35),
+    // the utility's auto-correction didn't catch it.
+    const finalized = coords.map((c) => ({
+      lat: c.lat < 10 ? c.lat * 10 : c.lat,
+      lng: c.lng < 10 ? c.lng * 10 : c.lng,
+    }));
+
+    dispatch(
+      setRoutes([
+        {
+          id: vehicleId,
+          color: getVehicleColors(index).primary,
+          coordinates: finalized,
+        },
+      ])
     );
   };
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Scenario Selection */}
-      <div className="flex flex-col gap-3">
-        {scenarios.map(renderScenarioCard)}
-      </div>
-
       {/* Summary Statistics */}
       {summary && (
         <Card className="bg-gradient-to-br from-purple-600 to-purple-800 border-none shadow-xl">
@@ -337,7 +228,7 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
       )}
 
       {/* Unassigned Orders */}
-      {summary.unassigned_orders_list &&
+      {summary?.unassigned_orders_list &&
         summary.unassigned_orders_list.length > 0 && (
           <Card className="border-red-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
@@ -628,21 +519,20 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
                   )}
 
                   {/* Show Route Button */}
-                  {onShowRoute && (
-                    <Button
-                      type="primary"
-                      block
-                      icon={<EnvironmentOutlined />}
-                      onClick={() => onShowRoute(vehicle.id)}
-                      style={{
-                        backgroundColor: colors.primary,
-                        borderColor: colors.primary,
-                      }}
-                      className="font-semibold"
-                    >
-                      Show Route on Map
-                    </Button>
-                  )}
+                  <Button
+                    type="primary"
+                    block
+                    icon={<EnvironmentOutlined />}
+                    // UPDATED CLICK HANDLER
+                    onClick={() => handleShowRoute(vehicle.id, index)}
+                    style={{
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                    }}
+                    className="font-semibold mt-3"
+                  >
+                    Show Route on Map
+                  </Button>
                 </Card>
               );
             })}

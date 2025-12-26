@@ -8,7 +8,7 @@ const MapComponent = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersRef = useRef([]);
-  const activeRouteIds = useRef(new Set()); // Keep track of layers added to the map
+  // Selectors
   const points = useSelector(selectPoints);
   const routes = useSelector(selectRoutes);
 
@@ -35,32 +35,32 @@ const MapComponent = () => {
           },
         ],
       },
-      center: [51.3755, 35.7448],
+      center: [51.3755, 35.7448], // Default center
       zoom: 10,
     });
 
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
   }, []);
 
-  // --- SYNC POINTS ---
+  // --- SYNC POINTS (Markers) ---
   useEffect(() => {
     if (!map.current) return;
 
-    // 1. ALWAYS clear old markers first (even if points.length is 0)
+    // Clear old markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    if (points.length === 0) return;
+    if (!points || points.length === 0) return;
 
     const bounds = new maplibregl.LngLatBounds();
 
     points.forEach((p) => {
       const popup = new maplibregl.Popup({ offset: 25 }).setHTML(
-        `<strong>${p.name}</strong><p>${p.description}</p>`
+        `<strong>${p.name}</strong><p>${p.description || ""}</p>`
       );
 
       const marker = new maplibregl.Marker({ color: "#3FB1CE" })
-        .setLngLat(p.coords)
+        .setLngLat(p.coords) // Expecting [lng, lat] or {lng, lat}
         .setPopup(popup)
         .addTo(map.current);
 
@@ -68,71 +68,97 @@ const MapComponent = () => {
       bounds.extend(p.coords);
     });
 
-    map.current.fitBounds(bounds, { padding: 70, maxZoom: 12 });
-  }, [points]);
+    // Only fit bounds if we have points and NO routes (routes usually take priority)
+    if (points.length > 0 && (!routes || routes.length === 0)) {
+      map.current.fitBounds(bounds, { padding: 70, maxZoom: 12 });
+    }
+  }, [points, routes]);
 
-  // --- SYNC ROUTES ---
+  // --- SYNC ROUTES (Lines) ---
   useEffect(() => {
-    const mapInstance = map.current;
-    if (!mapInstance) return;
+    if (!map.current) return;
 
-    const updateRoutes = () => {
-      if (!mapInstance.isStyleLoaded()) return;
-
-      // 1. Identify routes to remove (those on map but not in Redux)
-      const currentRouteIdsInRedux = new Set(
-        routes.map((r) => r.id.toString())
-      );
-
-      activeRouteIds.current.forEach((id) => {
-        if (!currentRouteIdsInRedux.has(id)) {
-          if (mapInstance.getLayer(`layer-${id}`))
-            mapInstance.removeLayer(`layer-${id}`);
-          if (mapInstance.getSource(`source-${id}`))
-            mapInstance.removeSource(`source-${id}`);
-          activeRouteIds.current.delete(id);
+    // 1. Clean up OLD routes that are no longer in the Redux store
+    // Get all current style layers
+    const style = map.current.getStyle();
+    if (style && style.layers) {
+      style.layers.forEach((layer) => {
+        if (layer.id.startsWith("route-layer-")) {
+          const routeId = layer.id.replace("route-layer-", "");
+          // If this ID is not in the new props, remove it
+          if (!routes.find((r) => r.id === routeId)) {
+            map.current.removeLayer(layer.id);
+            if (map.current.getSource(`route-${routeId}`)) {
+              map.current.removeSource(`route-${routeId}`);
+            }
+          }
         }
       });
+    }
 
-      // 2. Add or Update routes
-      routes.forEach((route) => {
-        const id = route.id.toString();
-        const sourceId = `source-${id}`;
-        const layerId = `layer-${id}`;
-        const source = mapInstance.getSource(sourceId);
+    if (!routes || routes.length === 0) return;
 
-        const geojsonData = {
-          type: "Feature",
-          geometry: { type: "LineString", coordinates: route.coordinates },
-        };
+    const bounds = new maplibregl.LngLatBounds();
+    let hasValidCoords = false;
 
-        if (source) {
-          source.setData(geojsonData);
-        } else {
-          mapInstance.addSource(sourceId, {
-            type: "geojson",
-            data: geojsonData,
-          });
-          mapInstance.addLayer({
-            id: layerId,
-            type: "line",
-            source: sourceId,
-            layout: { "line-join": "round", "line-cap": "round" },
-            paint: {
-              "line-color": route.color || "#ff0000",
-              "line-width": 3,
-              "line-opacity": 0.75,
-            },
-          });
-          activeRouteIds.current.add(id);
-        }
+    routes.forEach((route) => {
+      const sourceId = `route-${route.id}`;
+      const layerId = `route-layer-${route.id}`;
+
+      // Ensure coords are [lng, lat] arrays for GeoJSON
+      const formattedCoords = route.coordinates.map((c) => {
+        const lng = typeof c.lng === "number" ? c.lng : c[0];
+        const lat = typeof c.lat === "number" ? c.lat : c[1];
+        return [lng, lat];
       });
-    };
 
-    if (mapInstance.isStyleLoaded()) {
-      updateRoutes();
-    } else {
-      mapInstance.once("styledata", updateRoutes);
+      if (formattedCoords.length === 0) return;
+
+      // Extend bounds to include this route
+      formattedCoords.forEach((coord) => bounds.extend(coord));
+      hasValidCoords = true;
+
+      // If Source exists, update data; else add Source
+      const geoJsonData = {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: formattedCoords,
+        },
+      };
+
+      if (map.current.getSource(sourceId)) {
+        map.current.getSource(sourceId).setData(geoJsonData);
+      } else {
+        map.current.addSource(sourceId, {
+          type: "geojson",
+          data: geoJsonData,
+        });
+      }
+
+      // If Layer doesn't exist, add it
+      if (!map.current.getLayer(layerId)) {
+        map.current.addLayer({
+          id: layerId,
+          type: "line",
+          source: sourceId,
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": route.color || "#3b82f6",
+            "line-width": 4,
+            "line-opacity": 0.8,
+          },
+        });
+      }
+    });
+
+    // 2. Zoom map to show the new route(s)
+    if (hasValidCoords) {
+      map.current.fitBounds(bounds, { padding: 50 });
     }
   }, [routes]);
 

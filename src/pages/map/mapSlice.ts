@@ -2,29 +2,28 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   points: [],
-  routes: [],
+  routes: [], // Array of { id, coordinates, color }
 };
 
-export const mapSlice = createSlice({
+const mapSlice = createSlice({
   name: "map",
   initialState,
   reducers: {
+    setRoutes: (state, action) => {
+      // Replaces current routes
+      state.routes = action.payload;
+    },
     setPoints: (state, action) => {
       state.points = action.payload;
     },
-    addPoint: (state, action) => {
-      state.points.push(action.payload);
+    clearMap: (state) => {
+      state.routes = [];
+      state.points = [];
     },
-    setRoutes: (state, action) => {
-      state.routes = action.payload;
-    },
-  },
-  selectors: {
-    selectPoints: (state) => state.points,
-    selectRoutes: (state) => state.routes,
   },
 });
 
-export const { setPoints, addPoint, setRoutes } = mapSlice.actions;
-export const { selectPoints, selectRoutes } = mapSlice.selectors;
+export const { setRoutes, setPoints, clearMap } = mapSlice.actions;
+export const selectPoints = (state) => state.map.points;
+export const selectRoutes = (state) => state.map.routes;
 export default mapSlice.reducer;

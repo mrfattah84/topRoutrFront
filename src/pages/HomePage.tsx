@@ -49,9 +49,9 @@ const HomePage = () => {
   return (
     <Layout className="h-full p-5" style={{ background: "#FFFFFF" }}>
       <Sider
-        width={300}
+        width={350}
         style={{ background: "#F2F2F2" }}
-        className="rounded-xl"
+        className="rounded-xl overflow-y-scroll"
       >
         <img
           src={"./logo.svg"}
