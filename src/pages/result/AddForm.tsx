@@ -56,7 +56,7 @@ const getTimeEstimate = (elapsedTime: number): string => {
   }
 };
 
-const AddForm = ({ setResultData }) => {
+const AddForm = ({ setResultData, resultData }) => {
   const [formData, setFormData] = useState({
     no_balance: false,
     balance_order_count: false,
@@ -232,6 +232,7 @@ const AddForm = ({ setResultData }) => {
         is_default: true,
       }).unwrap();
       message.success("Configuration saved successfully");
+      setResultData(null);
     } catch (err) {
       message.error("Failed to save configuration");
     }
@@ -239,139 +240,133 @@ const AddForm = ({ setResultData }) => {
 
   const handleRunOptimization = async () => {
     try {
-      setIsRunning(true);
-      setRunStatus(null);
-      setResultData(null);
-      setExcludedOrders([]);
+      if (resultData && !isSaving) {
+        dispatch(setSidebarMenue("result-show"));
+        setIsRunning(false);
+      } else {
+        setIsRunning(true);
+        setRunStatus(null);
+        setExcludedOrders([]);
 
-      let validOrderIds: string[] = [];
-      let invalidOrders: any[] = [];
+        let validOrderIds: string[] = [];
+        let invalidOrders: any[] = [];
 
-      if (orders && Array.isArray(orders)) {
-        const addressesToGeocode: any[] = [];
-        orders.forEach((order: any) => {
-          const source = order.source || {};
-          const destination = order.destination || {};
+        if (orders && Array.isArray(orders)) {
+          const addressesToGeocode: any[] = [];
+          orders.forEach((order: any) => {
+            const source = order.source || {};
+            const destination = order.destination || {};
 
-          if (
-            source.uid &&
-            (!hasValidCoords(source) ||
-              !source.verified ||
-              source.verified === "red")
-          ) {
-            if (!addressesToGeocode.find((a) => a.uid === source.uid)) {
-              addressesToGeocode.push(source);
+            if (source.uid && !hasValidCoords(source)) {
+              if (!addressesToGeocode.find((a) => a.uid === source.uid)) {
+                addressesToGeocode.push(source);
+              }
             }
-          }
-          if (
-            destination.uid &&
-            (!hasValidCoords(destination) ||
-              !destination.verified ||
-              destination.verified === "red")
-          ) {
-            if (!addressesToGeocode.find((a) => a.uid === destination.uid)) {
-              addressesToGeocode.push(destination);
+            if (!hasValidCoords(destination) && destination.uid) {
+              if (!addressesToGeocode.find((a) => a.uid === destination.uid)) {
+                addressesToGeocode.push(destination);
+              }
             }
-          }
-        });
-
-        if (addressesToGeocode.length > 0) {
-          setIsGeocoding(true);
-          setGeocodingProgress({
-            current: 0,
-            total: addressesToGeocode.length,
           });
 
-          for (let i = 0; i < addressesToGeocode.length; i++) {
+          if (addressesToGeocode.length > 0) {
+            setIsGeocoding(true);
             setGeocodingProgress({
-              current: i + 1,
+              current: 0,
               total: addressesToGeocode.length,
             });
-            await geocodeAndUpdateAddress(addressesToGeocode[i]);
-            await new Promise((resolve) => setTimeout(resolve, 200));
+
+            for (let i = 0; i < addressesToGeocode.length; i++) {
+              setGeocodingProgress({
+                current: i + 1,
+                total: addressesToGeocode.length,
+              });
+              await geocodeAndUpdateAddress(addressesToGeocode[i]);
+              await new Promise((resolve) => setTimeout(resolve, 200));
+            }
+
+            setIsGeocoding(false);
           }
 
-          setIsGeocoding(false);
+          const parsed = orders.map((o: any) => {
+            const id = o.id || o.uuid;
+            const source = o.source || {};
+            const destination = o.destination || {};
+            const validSource = hasValidCoords(source);
+            const validDest = hasValidCoords(destination);
+
+            let reason = "";
+            if (!validSource || !validDest) {
+              reason = `Missing coords: ${!validSource ? "source" : ""}${
+                !validSource && !validDest ? " & " : ""
+              }${!validDest ? "destination" : ""}`;
+            }
+
+            return {
+              id,
+              title: o.title || o.order_id || id,
+              valid: validSource && validDest,
+              reason,
+            };
+          });
+
+          const validOrders = parsed.filter((o: any) => o.valid);
+          invalidOrders = parsed.filter((o: any) => !o.valid);
+          validOrderIds = validOrders.map((o: any) => o.id);
+          setExcludedOrders(invalidOrders);
         }
 
-        const parsed = orders.map((o: any) => {
-          const id = o.id || o.uuid;
-          const source = o.source || {};
-          const destination = o.destination || {};
-          const validSource = hasValidCoords(source);
-          const validDest = hasValidCoords(destination);
+        if (validOrderIds.length === 0) {
+          message.error("No orders with valid locations to optimize");
+          setIsRunning(false);
+          return;
+        }
 
-          let reason = "";
-          if (!validSource || !validDest) {
-            reason = `Missing coords: ${!validSource ? "source" : ""}${
-              !validSource && !validDest ? " & " : ""
-            }${!validDest ? "destination" : ""}`;
-          }
+        let driverIdsWithVehicles: string[] = [];
+        const names: Record<string, string> = {};
 
-          return {
-            id,
-            title: o.title || o.order_id || id,
-            valid: validSource && validDest,
-            reason,
-          };
-        });
+        if (drivers && Array.isArray(drivers)) {
+          const driversWithVehicles = drivers.filter(
+            (d: any) => d.vehicle || d.vehicle_id || d.vehicleId
+          );
+          driverIdsWithVehicles = driversWithVehicles
+            .map((d: any) => d.id || d.uuid)
+            .filter(Boolean);
 
-        const validOrders = parsed.filter((o: any) => o.valid);
-        invalidOrders = parsed.filter((o: any) => !o.valid);
-        validOrderIds = validOrders.map((o: any) => o.id);
-        setExcludedOrders(invalidOrders);
-      }
+          driversWithVehicles.forEach((d: any) => {
+            const id = d.id || d.uuid;
+            names[id] = d.name || d.vehicle?.name || `Vehicle ${id}`;
+          });
+        }
 
-      if (validOrderIds.length === 0) {
-        message.error("No orders with valid locations to optimize");
-        setIsRunning(false);
-        return;
-      }
+        if (driverIdsWithVehicles.length === 0) {
+          message.error("No drivers with vehicles found");
+          setIsRunning(false);
+          return;
+        }
 
-      let driverIdsWithVehicles: string[] = [];
-      const names: Record<string, string> = {};
+        const saveResult = await saveConfig({
+          ...formData,
+          name: "My Balance Config",
+          is_default: true,
+        }).unwrap();
 
-      if (drivers && Array.isArray(drivers)) {
-        const driversWithVehicles = drivers.filter(
-          (d: any) => d.vehicle || d.vehicle_id || d.vehicleId
-        );
-        driverIdsWithVehicles = driversWithVehicles
-          .map((d: any) => d.id || d.uuid)
-          .filter(Boolean);
+        const runResult = await runOptimization({
+          config_id: saveResult.id,
+          driver_ids: driverIdsWithVehicles,
+          order_ids: validOrderIds,
+          run_async: true,
+          balance_order_count: formData.balance_order_count,
+          balance_working_time: formData.balance_working_time,
+          allow_multiple_depot_visits: formData.allow_multiple_depot_visits,
+          depot_visit_time_default: formData.depot_visit_time_default,
+          policy: formData.policy,
+        }).unwrap();
 
-        driversWithVehicles.forEach((d: any) => {
-          const id = d.id || d.uuid;
-          names[id] = d.name || d.vehicle?.name || `Vehicle ${id}`;
-        });
-      }
-
-      if (driverIdsWithVehicles.length === 0) {
-        message.error("No drivers with vehicles found");
-        setIsRunning(false);
-        return;
-      }
-
-      const saveResult = await saveConfig({
-        ...formData,
-        name: "My Balance Config",
-        is_default: true,
-      }).unwrap();
-
-      const runResult = await runOptimization({
-        config_id: saveResult.id,
-        driver_ids: driverIdsWithVehicles,
-        order_ids: validOrderIds,
-        run_async: true,
-        balance_order_count: formData.balance_order_count,
-        balance_working_time: formData.balance_working_time,
-        allow_multiple_depot_visits: formData.allow_multiple_depot_visits,
-        depot_visit_time_default: formData.depot_visit_time_default,
-        policy: formData.policy,
-      }).unwrap();
-
-      if (runResult?.id) {
-        setRunId(runResult.id);
-        setRunStatus(runResult.status || "pending");
+        if (runResult?.id) {
+          setRunId(runResult.id);
+          setRunStatus(runResult.status || "pending");
+        }
       }
     } catch (err: any) {
       console.error("Optimization run failed:", err);
@@ -381,9 +376,20 @@ const AddForm = ({ setResultData }) => {
   };
 
   return (
-    <div className="p-5 pt-0">
-      <Title level={4} className="m-0! mb-2! !font-bold !text-[#0A214A]">
+    <div className="p-5">
+      <Title
+        level={4}
+        className="m-0! mb-2! !font-bold !text-[#0A214A] flex justify-between items-center"
+      >
         Policy Configuration
+        <Button
+          type="primary"
+          shape="circle"
+          size="small"
+          onClick={() => dispatch(setSidebarMenue(""))}
+        >
+          X
+        </Button>
       </Title>
 
       <div className="flex flex-col gap-2">

@@ -13,8 +13,7 @@ const Result = () => {
 
   switch (menue) {
     case "result-add":
-      console.log(123123);
-      return <AddForm setResultData={setResultData} />;
+      return <AddForm setResultData={setResultData} resultData={resultData} />;
     case "result-show":
       return <OptimizationResultPanel resultData={resultData} />;
   }

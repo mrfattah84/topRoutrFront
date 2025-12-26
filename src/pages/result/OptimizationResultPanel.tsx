@@ -11,8 +11,9 @@ import {
 import { useGetVehicleNamesQuery } from "./optimizationApi";
 // Import Redux hooks and actions
 import { useDispatch } from "react-redux";
-import { setRoutes } from "../map/mapSlice"; // Ensure path is correct
+import { addPoint, clearMap, setRoutes } from "../map/mapSlice"; // Ensure path is correct
 import { decodePolyline6 } from "./polyLine"; // Ensure this utility exists
+import { setSidebarMenue } from "../formDialog/dialogSlice";
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -98,6 +99,42 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
       lng: c.lng < 10 ? c.lng * 10 : c.lng,
     }));
 
+    dispatch(clearMap());
+    for (let i = 0; i < vehicle.steps.length; i++) {
+      const step = vehicle.steps[i];
+      if (step.type == "start") {
+        dispatch(
+          addPoint({
+            id: vehicleId,
+            color: "#008000",
+            coords: step.location,
+            name: step.type,
+            description: "",
+          })
+        );
+      } else if (step.type == "end") {
+        dispatch(
+          addPoint({
+            id: vehicleId,
+            color: "#FF0000",
+            coords: step.location,
+            name: step.type,
+            description: "",
+          })
+        );
+      } else {
+        console.log(step);
+        dispatch(
+          addPoint({
+            id: vehicleId,
+            color: getVehicleColors(index).primary,
+            coords: step.location,
+            name: step.type,
+            description: i,
+          })
+        );
+      }
+    }
     dispatch(
       setRoutes([
         {
@@ -110,44 +147,49 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pt-5">
       {/* Summary Statistics */}
       {summary && (
-        <Card className="bg-gradient-to-br from-purple-600 to-purple-800 border-none shadow-xl">
+        <Card>
           <div className="flex items-center gap-2 mb-4">
-            <CheckCircleOutlined className="text-white text-xl" />
-            <Title level={4} className="!text-white !mb-0">
+            <CheckCircleOutlined className=" text-xl" />
+            <Title
+              level={4}
+              className="flex justify-between items-center w-full mb-0!"
+            >
               Summary
+              <Button
+                type="primary"
+                shape="circle"
+                size="small"
+                onClick={() => dispatch(setSidebarMenue(""))}
+              >
+                X
+              </Button>
             </Title>
           </div>
 
           <Row gutter={[12, 12]}>
             <Col span={12}>
-              <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3">
-                <Text className="text-white/90 text-xs block mb-1">
-                  Total Orders
-                </Text>
-                <Text className="text-white text-2xl font-bold">
+              <div className=" backdrop-blur-sm rounded-xl p-3">
+                <Text className=" text-xs block mb-1">Total Orders</Text>
+                <Text className=" text-2xl font-bold">
                   {summary.total_orders || 0}
                 </Text>
               </div>
             </Col>
             <Col span={12}>
-              <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3">
-                <Text className="text-white/90 text-xs block mb-1">
-                  Vehicles Used
-                </Text>
-                <Text className="text-white text-2xl font-bold">
+              <div className=" backdrop-blur-sm rounded-xl p-3">
+                <Text className=" text-xs block mb-1">Vehicles Used</Text>
+                <Text className=" text-2xl font-bold">
                   {summary.vehicles_used || 0}
                 </Text>
               </div>
             </Col>
             <Col span={12}>
-              <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3">
-                <Text className="text-white/90 text-xs block mb-1">
-                  Optimized
-                </Text>
-                <Text className="text-white text-2xl font-bold">
+              <div className=" backdrop-blur-sm rounded-xl p-3">
+                <Text className=" text-xs block mb-1">Optimized</Text>
+                <Text className=" text-2xl font-bold">
                   {summary.optimized_orders || 0}
                 </Text>
               </div>
@@ -156,15 +198,11 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
               <Col span={12}>
                 <div
                   className={`backdrop-blur-sm rounded-xl p-3 ${
-                    summary.unassigned_orders > 0
-                      ? "bg-red-500/30"
-                      : "bg-white/15"
+                    summary.unassigned_orders > 0 ? "bg-red-500/30" : ""
                   }`}
                 >
-                  <Text className="text-white/90 text-xs block mb-1">
-                    Unassigned
-                  </Text>
-                  <Text className="text-white text-2xl font-bold">
+                  <Text className=" text-xs block mb-1">Unassigned</Text>
+                  <Text className=" text-2xl font-bold">
                     {summary.unassigned_orders || 0}
                   </Text>
                 </div>
@@ -179,11 +217,9 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
             <Row gutter={[12, 12]} className="mt-3">
               {summary.total_cost !== undefined && (
                 <Col span={8}>
-                  <div className="bg-white/15 backdrop-blur-sm rounded-xl p-2">
-                    <Text className="text-white/90 text-[10px] block">
-                      Total Cost
-                    </Text>
-                    <Text className="text-white text-lg font-bold">
+                  <div className=" backdrop-blur-sm rounded-xl p-2">
+                    <Text className=" text-[10px] block">Total Cost</Text>
+                    <Text className=" text-lg font-bold">
                       {summary.total_cost.toLocaleString()}
                     </Text>
                   </div>
@@ -191,11 +227,9 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
               )}
               {summary.total_service_time !== undefined && (
                 <Col span={8}>
-                  <div className="bg-white/15 backdrop-blur-sm rounded-xl p-2">
-                    <Text className="text-white/90 text-[10px] block">
-                      Service Time
-                    </Text>
-                    <Text className="text-white text-lg font-bold">
+                  <div className=" backdrop-blur-sm rounded-xl p-2">
+                    <Text className=" text-[10px] block">Service Time</Text>
+                    <Text className=" text-lg font-bold">
                       {formatDuration(summary.total_service_time)}
                     </Text>
                   </div>
@@ -203,11 +237,9 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
               )}
               {summary.total_waiting_time !== undefined && (
                 <Col span={8}>
-                  <div className="bg-white/15 backdrop-blur-sm rounded-xl p-2">
-                    <Text className="text-white/90 text-[10px] block">
-                      Waiting Time
-                    </Text>
-                    <Text className="text-white text-lg font-bold">
+                  <div className=" backdrop-blur-sm rounded-xl p-2">
+                    <Text className=" text-[10px] block">Waiting Time</Text>
+                    <Text className=" text-lg font-bold">
                       {formatDuration(summary.total_waiting_time)}
                     </Text>
                   </div>
@@ -219,7 +251,7 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
           {/* Violations */}
           {summary.violations && summary.violations.length > 0 && (
             <div className="bg-red-500/20 rounded-xl p-3 mt-3">
-              <Text className="text-white text-xs font-semibold">
+              <Text className=" text-xs font-semibold">
                 ⚠️ Constraint Violations: {summary.violations.length}
               </Text>
             </div>
@@ -288,7 +320,7 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
                   {/* Vehicle Header */}
                   <div className="flex items-center gap-3 mb-3">
                     <div
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center  font-bold text-sm"
                       style={{ backgroundColor: colors.primary }}
                     >
                       {index + 1}
@@ -420,49 +452,17 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
                         </span>
                       </Text>
                     </Col>
-                  </Row>
-
-                  {/* Orders Section */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <BoxPlotOutlined style={{ color: colors.primary }} />
-                    <Text className="text-xs font-medium">Orders:</Text>
-                    <Badge
-                      count={vehicle.orders.length}
-                      style={{ backgroundColor: colors.primary }}
-                    />
-                  </div>
-
-                  {vehicle.orders.length > 0 && (
-                    <div className="mb-3">
-                      <Text className="text-xs font-semibold text-[#0A214A] block mb-2">
-                        Order numbers / IDs:
-                      </Text>
-                      <div className="flex flex-wrap gap-1.5">
-                        {vehicle.orders
-                          .slice(0, 20)
-                          .map((o: any, i: number) => {
-                            const ord =
-                              o.order_number ||
-                              o.order_id ||
-                              o.uuid ||
-                              (typeof o === "string" ? o : "");
-                            return (
-                              <Tag
-                                key={`${vehicle.id}-ord-${i}`}
-                                className="text-[10px] font-mono"
-                              >
-                                {ord || "—"}
-                              </Tag>
-                            );
-                          })}
-                        {vehicle.orders.length > 20 && (
-                          <Text className="text-[10px] text-gray-500">
-                            ...and {vehicle.orders.length - 20} more
-                          </Text>
-                        )}
+                    <Col span={12}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <BoxPlotOutlined style={{ color: colors.primary }} />
+                        <Text className="text-xs font-medium">Orders:</Text>
+                        <Badge
+                          count={vehicle.orders.length}
+                          style={{ backgroundColor: colors.primary }}
+                        />
                       </div>
-                    </div>
-                  )}
+                    </Col>
+                  </Row>
 
                   {/* Route Steps */}
                   {vehicle.steps && vehicle.steps.length > 0 && (

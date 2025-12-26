@@ -313,13 +313,7 @@ const AddFleet = ({ id = null }) => {
               <AddAddress setShowAddAddress={setShowAddOrigin} />
             </Form.Item>
           ) : (
-            <Form.Item
-              label="Start Location"
-              name="start_location"
-              rules={[
-                { required: true, message: "Please select start location" },
-              ]}
-            >
+            <Form.Item label="Start Location" name="start_location">
               <AddressSelector
                 name="start_location"
                 onAddAddress={() => setShowAddOrigin(true)}
@@ -335,13 +329,7 @@ const AddFleet = ({ id = null }) => {
               <AddAddress setShowAddAddress={setShowAddDestination} />
             </Form.Item>
           ) : (
-            <Form.Item
-              label="End Location"
-              name="end_location"
-              rules={[
-                { required: true, message: "Please select end location" },
-              ]}
-            >
+            <Form.Item label="End Location" name="end_location">
               <AddressSelector
                 name="end_location"
                 onAddAddress={() => setShowAddDestination(true)}
@@ -351,7 +339,11 @@ const AddFleet = ({ id = null }) => {
           <Form.Item name="depotEnd">
             <Checkbox>use depot as end</Checkbox>
           </Form.Item>
-          <Form.Item label="Working hours" name="scedule">
+          <Form.Item
+            label="Working hours"
+            name="scedule"
+            rules={[{ required: true, message: "Please enter working hour" }]}
+          >
             <TimePicker.RangePicker format={format} minuteStep={15} />
           </Form.Item>
         </>
@@ -410,7 +402,6 @@ const AddFleet = ({ id = null }) => {
           <Form.Item
             label="distance Limit(KM)"
             name={["cost", "distance_limit"]}
-            rules={[{ required: true, message: "Please enter distance limit" }]}
           >
             <Input placeholder="e.g., 1000" />
           </Form.Item>

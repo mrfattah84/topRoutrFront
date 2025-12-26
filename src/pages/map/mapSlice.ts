@@ -16,6 +16,9 @@ const mapSlice = createSlice({
     setPoints: (state, action) => {
       state.points = action.payload;
     },
+    addPoint: (state, action) => {
+      state.points.push(action.payload);
+    },
     clearMap: (state) => {
       state.routes = [];
       state.points = [];
@@ -23,7 +26,7 @@ const mapSlice = createSlice({
   },
 });
 
-export const { setRoutes, setPoints, clearMap } = mapSlice.actions;
+export const { setRoutes, setPoints, addPoint, clearMap } = mapSlice.actions;
 export const selectPoints = (state) => state.map.points;
 export const selectRoutes = (state) => state.map.routes;
 export default mapSlice.reducer;

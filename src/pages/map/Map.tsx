@@ -59,7 +59,7 @@ const MapComponent = () => {
         `<strong>${p.name}</strong><p>${p.description || ""}</p>`
       );
 
-      const marker = new maplibregl.Marker({ color: "#3FB1CE" })
+      const marker = new maplibregl.Marker({ color: p.color })
         .setLngLat(p.coords) // Expecting [lng, lat] or {lng, lat}
         .setPopup(popup)
         .addTo(map.current);

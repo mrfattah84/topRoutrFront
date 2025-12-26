@@ -380,6 +380,7 @@ const ImportOrder = () => {
           source_id: sourceId?.uid || sourceId,
           destination_id: destinationId?.uid || destinationId,
           delivery_date: formatted_delivery_date,
+          activated: false,
           delivery_time_to:
             dayjs()
               .second((parseInt(order.delivery_time_to) % 1) * 86400)
@@ -389,10 +390,11 @@ const ImportOrder = () => {
               .second((parseInt(order.delivery_time_from) % 1) * 86400)
               .format("HH:mm") || null,
           stop_time: order?.stop_time
-            ? dayjs().minute(parseInt(order.stop_time)).format("HH:mm")
-            : form?.getFieldValue("stop_time")
-            ? form?.getFieldValue("stop_time")
-            : "00:05",
+            ? dayjs()
+                .startOf("day")
+                .minute(parseInt(order.stop_time))
+                .format("HH:mm:ss")
+            : form?.getFieldValue("stop_time") || "00:05",
           order_number: order.order_number,
           code: order.code || null,
           description: "created by UPLOAD",
