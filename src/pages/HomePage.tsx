@@ -49,9 +49,9 @@ const HomePage = () => {
   return (
     <Layout className="h-full p-5" style={{ background: "#FFFFFF" }}>
       <Sider
-        width={300}
+        width={350}
         style={{ background: "#F2F2F2" }}
-        className="rounded-xl"
+        className="rounded-xl overflow-y-scroll"
       >
         <img
           src={"./logo.svg"}
@@ -117,7 +117,7 @@ const HomePage = () => {
         )}
       </Sider>
       <Layout style={{ padding: "0 0 0 10px", background: "#FFFFFF" }}>
-        <Header
+        {/*<Header
           style={{
             background: "#FFFFFF",
           }}
@@ -127,7 +127,8 @@ const HomePage = () => {
           <div className="text-[#0B1F40] font-bold text-xl">Hamed Kahani</div>
           <PhoneOutlined />
           <Button className="border-[#0B1F40]! border-2!">Logout</Button>
-        </Header>
+        </Header> */}
+
         <Content>
           <Map />
           <CustomDialog />

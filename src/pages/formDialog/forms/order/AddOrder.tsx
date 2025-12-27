@@ -91,14 +91,13 @@ const AddOrder = ({ id = null }) => {
         source_id: orderData.source.uid,
         destination_id: orderData.destination.uid,
         priority: orderData.priority,
-        order_type: orderData.order_type,
         description: orderData.description,
 
         // Date field - keep as string (already in YYYY-MM-DD format)
         delivery_date: orderData.delivery_date,
 
         // Time fields - convert string to dayjs
-        stop_time: parseTime(orderData.stop_time),
+        stop_time: parseTime("00:" + orderData.stop_time),
 
         // Time windows - convert delivery_time_from/to to times array structure
         times:
@@ -123,7 +122,6 @@ const AddOrder = ({ id = null }) => {
             }))
           : [],
 
-        assigned_to_id: orderData?.driver?.id,
         code: orderData.code,
       };
 
@@ -160,7 +158,6 @@ const AddOrder = ({ id = null }) => {
           "source_id",
           "destination_id",
           "priority",
-          "order_type",
         ]);
 
         setStep(1);
@@ -181,10 +178,11 @@ const AddOrder = ({ id = null }) => {
         // Format the data to match API schema
         const formattedData = {
           // Required fields
+          activated: false,
           source_id: allFormData.source_id,
           destination_id: allFormData.destination_id,
           order_number: allFormData.order_number,
-          order_type: allFormData.order_type,
+          order_type: "delivery",
           priority: allFormData.priority,
 
           // Date fields
@@ -203,8 +201,6 @@ const AddOrder = ({ id = null }) => {
           // Optional fields
           description: allFormData.description || null,
           stop_time: allFormData.stop_time?.format("HH:mm:ss"),
-
-          driver_id: allFormData.assigned_to_id || null,
 
           // Item IDs array - extract from Items list
           order_item_id:
@@ -343,7 +339,7 @@ const AddOrder = ({ id = null }) => {
           )}
 
           <Row gutter={8} style={{ width: "100%" }}>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item
                 label="Priority"
                 name="priority"
@@ -361,29 +357,7 @@ const AddOrder = ({ id = null }) => {
               </Form.Item>
             </Col>
 
-            <Col span={8}>
-              <Form.Item
-                label="Order Type"
-                name="order_type"
-                rules={[
-                  { required: true, message: "Please select order type" },
-                ]}
-                initialValue="standard"
-              >
-                <Select
-                  placeholder="Select order type"
-                  options={[
-                    { value: "standard", label: "Standard" },
-                    { value: "express", label: "Express" },
-                    { value: "scheduled", label: "Scheduled" },
-                    { value: "pickup", label: "Pickup" },
-                    { value: "delivery", label: "Delivery" },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item
                 label="Stop duration"
                 name="stop_time"
@@ -391,7 +365,12 @@ const AddOrder = ({ id = null }) => {
                   { required: true, message: "Please set the stop time" },
                 ]}
               >
-                <TimePicker format={format} minuteStep={15} />
+                <TimePicker
+                  format={format}
+                  minuteStep={15}
+                  style={{ width: "100%" }}
+                  showNow={false}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -474,6 +453,7 @@ const AddOrder = ({ id = null }) => {
                       onClick={() => add()}
                       block
                       icon={<PlusOutlined />}
+                      style={{ marginBottom: 0 }}
                     >
                       Add Time Window
                     </Button>
@@ -483,23 +463,9 @@ const AddOrder = ({ id = null }) => {
             </Form.List>
           </Form.Item>
 
-          <Row gutter={8} style={{ width: "100%" }}>
-            <Col span={12}>
-              <Form.Item label="Tracking code" name="code">
-                <InputNumber style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Driver" name="assigned_to_id">
-                <Select
-                  showSearch={{ optionFilterProp: "label" }}
-                  placeholder="Search in drivers"
-                  options={fleets}
-                  loading={isFleetsLoading}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item label="Tracking code" name="code">
+            <InputNumber style={{ width: "100%" }} />
+          </Form.Item>
         </>
       )}
       <Form.Item style={{ textAlign: "end" }}>

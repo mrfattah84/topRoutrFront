@@ -1,12 +1,11 @@
-import { GoogleOutlined } from "@ant-design/icons";
 import { Button } from "antd";
-import React from "react";
+import React, { useState } from "react";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import { useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
-  const [login, setLogin] = React.useState(true);
+  const [login, setLogin] = useState<boolean>(true);
   const navigate = useNavigate();
 
   function toggleLogin() {

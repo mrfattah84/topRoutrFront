@@ -3,13 +3,6 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { ConfigProvider } from "antd";
-import faIR from "antd/es/locale/fa_IR";
-import dayjs from "dayjs";
-import jalaliday from "jalaliday";
-import "dayjs/locale/fa";
-
-dayjs.extend(jalaliday);
-dayjs.locale("fa");
 
 import { store } from "./store.ts";
 import { Provider } from "react-redux";
@@ -25,7 +18,6 @@ createRoot(document.getElementById("root")!).render(
           sizeStep: 3,
         },
       }}
-      locale={faIR}
     >
       <Provider store={store}>
         <BrowserRouter>

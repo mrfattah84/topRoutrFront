@@ -4,17 +4,18 @@ import {
   selectCurrentForm,
 } from "../formDialog/dialogSlice";
 import AddForm from "./AddForm";
+import OptimizationResultPanel from "./OptimizationResultPanel";
+import { useState } from "react";
 
 const Result = () => {
   const menue = useSelector(selectCurrentSidebarMenue);
-  const form = useSelector(selectCurrentForm);
+  const [resultData, setResultData] = useState();
 
   switch (menue) {
     case "result-add":
-      console.log(123123);
-      return <AddForm />;
-    default:
-      return <div>fczdfsd</div>;
+      return <AddForm setResultData={setResultData} resultData={resultData} />;
+    case "result-show":
+      return <OptimizationResultPanel resultData={resultData} />;
   }
 };
 

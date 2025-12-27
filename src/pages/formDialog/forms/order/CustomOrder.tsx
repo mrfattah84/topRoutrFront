@@ -11,9 +11,7 @@ const CustomOrder = ({ show, form, name }) => {
         ["Items", name, "item_title"],
         ["Items", name, "description"],
         ["Items", name, "weight"],
-        ["Items", name, "length"],
-        ["Items", name, "width"],
-        ["Items", name, "height"],
+        ["Items", name, "volume"],
       ]);
 
       const itemData = form.getFieldValue(["Items", name]);
@@ -74,44 +72,13 @@ const CustomOrder = ({ show, form, name }) => {
         </Col>
         <Col span={12}>
           <Form.Item
-            label="Length"
-            name={[name, "length"]}
-            rules={[{ required: true, message: "Please enter length" }]}
+            label="Volume"
+            name={[name, "volume"]}
+            rules={[{ required: true, message: "Please enter volume" }]}
           >
             <InputNumber
               style={{ width: "100%" }}
-              placeholder="Enter length"
-              min={0}
-              step={0.01}
-            />
-          </Form.Item>
-        </Col>
-      </Row>
-
-      <Row gutter={8} style={{ width: "100%" }}>
-        <Col span={12}>
-          <Form.Item
-            label="Width"
-            name={[name, "width"]}
-            rules={[{ required: true, message: "Please enter width" }]}
-          >
-            <InputNumber
-              style={{ width: "100%" }}
-              placeholder="Enter width"
-              min={0}
-              step={0.01}
-            />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item
-            label="Height"
-            name={[name, "height"]}
-            rules={[{ required: true, message: "Please enter height" }]}
-          >
-            <InputNumber
-              style={{ width: "100%" }}
-              placeholder="Enter height"
+              placeholder="Enter volume"
               min={0}
               step={0.01}
             />

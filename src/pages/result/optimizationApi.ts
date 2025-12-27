@@ -57,6 +57,39 @@ export const optimizationApi = apiSlice.injectEndpoints({
         body: data,
       }),
     }),
+
+    getVehicleNames: builder.query({
+      providesTags: ["Vehicle"],
+      query: () => ({
+        url: "vehicles/",
+      }),
+      transformResponse: (data) => {
+        const newData = [];
+        data.forEach((v) => {
+          newData.push({
+            [v.id]: {
+              id: v.id || v.uuid,
+              active: v.is_active !== undefined ? v.is_active : true,
+              license: v.license_plate || "",
+              label: v.label || "",
+              features: v.has_custom_features ? "Yes" : "",
+              weight: v.weight || "",
+              volume:
+                v.length && v.width && v.height
+                  ? (v.length * v.width * v.height).toFixed(2)
+                  : "",
+              serial: v.serial_number || "",
+              name: v.name || "",
+              workHours: v.work_hours || "",
+              email: v.email || "",
+              break: v.break_duration || "",
+              timeWindow: v.time_window || "",
+            },
+          });
+        });
+        return newData;
+      },
+    }),
   }),
 });
 
@@ -69,4 +102,5 @@ export const {
   useGetOrdersForOptimizationQuery,
   useGetDriversForOptimizationQuery,
   useUpdateAddressMutation,
+  useGetVehicleNamesQuery,
 } = optimizationApi;
