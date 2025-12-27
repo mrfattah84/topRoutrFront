@@ -1,26 +1,11 @@
 import { GoogleOutlined } from "@ant-design/icons";
 import { Input, Button, Form, Alert, message } from "antd";
 import { useState } from "react";
-import { Input, Button, Form, Alert, message } from "antd";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { useDispatch, useSelector } from "react-redux";
+import { setCredentials, selectCurrentToken } from "./authSlice";
 import { useLoginMutation, useOtpMutation } from "./authApi";
-
-interface SignInProps {
-  toggle: () => void;
-}
-
-interface LoginFormValues {
-  email: string;
-  password: string;
-}
-
-interface OtpFormValues {
-  otp: string;
-}
-
-const SignIn: React.FC<SignInProps> = ({ toggle }) => {
-  const [step, setStep] = useState<0 | 1>(0);
 
 interface SignInProps {
   toggle: () => void;
@@ -39,6 +24,8 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
   const [step, setStep] = useState<0 | 1>(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState(0);
   const navigate = useNavigate();
 
   const [loginForm] = Form.useForm<LoginFormValues>();
@@ -48,13 +35,6 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
     useLoginMutation();
   const [otpCall, { isLoading: isOtpLoading, error: otpError }] =
     useOtpMutation();
-  const [loginForm] = Form.useForm<LoginFormValues>();
-  const [otpForm] = Form.useForm<OtpFormValues>();
-
-  const [login, { isLoading: isLoginLoading, error: loginError }] =
-    useLoginMutation();
-  const [otpCall, { isLoading: isOtpLoading, error: otpError }] =
-    useOtpMutation();
 
   const handleLoginSubmit = async (values: LoginFormValues) => {
     try {
@@ -92,48 +72,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
       setStep(0);
     } catch (err) {
       console.error("Failed to login:", err);
-  const handleLoginSubmit = async (values: LoginFormValues) => {
-    try {
-      const otp = await otpCall({
-        email: values.email,
-        password: values.password,
-      }).unwrap();
-
-      setEmail(values.email);
-      setPassword(values.password);
-
-      setStep(1);
-      message.success(
-        `OTP sent to ${otp.sent_to === "phone" ? otp.phone : otp.email}`
-      );
-    } catch (err) {
-      console.error("Failed to send OTP:", err);
     }
-  };
-
-  const handleOtpSubmit = async (values: OtpFormValues) => {
-    try {
-      await login({
-        email,
-        password,
-        otp: values.otp,
-      }).unwrap();
-      message.success("Login successful!");
-      navigate("/home", { replace: true });
-
-      loginForm.resetFields();
-      otpForm.resetFields();
-      setEmail("");
-      setPassword("");
-      setStep(0);
-    } catch (err) {
-      console.error("Failed to login:", err);
-    }
-  };
-
-  const handleBackToLogin = () => {
-    setStep(0);
-    otpForm.resetFields();
   };
 
   const handleBackToLogin = () => {
@@ -221,88 +160,12 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
             <Button type="link" onClick={toggle}>
               Sign up
             </Button>
-
-          {otpError && (
-            <Alert title={otpError as string} type="error" closable showIcon />
-          )}
-
-          <Form
-            form={loginForm}
-            layout="vertical"
-            onFinish={handleLoginSubmit}
-            initialValues={{ email: "", password: "" }}
-          >
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[
-                { required: true, message: "Please enter your email" },
-                { type: "email", message: "Please enter a valid email" },
-              ]}
-            >
-              <Input
-                className="bg-transparent! border-2! border-[#D1E9FF]!"
-                placeholder="balamia@gmail.com"
-                size="large"
-                disabled={isOtpLoading}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={
-                <div className="flex justify-between w-full">
-                  <span>Password</span>
-                  <Button type="link" size="small">
-                    Forgot
-                  </Button>
-                </div>
-              }
-              name="password"
-              rules={[
-                { required: true, message: "Please enter your password" },
-                { min: 8, message: "Password must be at least 6 characters" },
-              ]}
-            >
-              <Input.Password
-                className="bg-transparent! border-2! border-[#D1E9FF]!"
-                placeholder="Enter your password"
-                size="large"
-                disabled={isOtpLoading}
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                size="large"
-                htmlType="submit"
-                loading={isOtpLoading}
-                block
-              >
-                <span className="font-medium">Continue</span>
-              </Button>
-            </Form.Item>
-          </Form>
-
-          <Button size="large" block>
-            <span className="font-medium text-[#1570EF]">
-              <GoogleOutlined className="mr-1" />
-              Continue with Google
-            </span>
-          </Button>
-
-          <div className="mx-auto">
-            Don't have an account?
-            <Button type="link" onClick={toggle}>
-              Sign up
-            </Button>
           </div>
         </>
       ) : (
         <>
           <Button
             type="text"
-            size="large"
             onClick={handleBackToLogin}
             className="self-start"
           >
@@ -311,6 +174,11 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
 
           <div className="flex flex-col items-center gap-4">
             <div className="text-3xl font-bold">Enter OTP</div>
+            <div className="text-gray-500 text-center">
+              We've sent a verification code to
+              <br />
+              <span className="font-medium">{email}</span>
+            </div>
 
             {loginError && (
               <Alert
@@ -322,7 +190,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
               />
             )}
 
-            <Form form={otpForm} onFinish={handleOtpSubmit}>
+            <Form form={otpForm} onFinish={handleOtpSubmit} className="w-full">
               <Form.Item
                 name="otp"
                 rules={[
@@ -332,7 +200,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
               >
                 <Input.OTP
                   length={6}
-                  className="gap-5! mx-auto!"
+                  className="m-auto gap-5!"
                   size="large"
                   disabled={isLoginLoading}
                 />
