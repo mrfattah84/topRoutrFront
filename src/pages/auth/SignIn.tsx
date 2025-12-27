@@ -1,88 +1,78 @@
 import { GoogleOutlined } from "@ant-design/icons";
-import { Input, Button } from "antd";
-import { useRef, useState, useEffect } from "react";
+import { Input, Button, Form, Alert, message } from "antd";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import { useDispatch, useSelector } from "react-redux";
-import { setCredentials, selectCurrentToken } from "./authSlice";
 import { useLoginMutation, useOtpMutation } from "./authApi";
-import { store } from "../../store";
 
-const SignIn = ({ toggle }) => {
+interface SignInProps {
+  toggle: () => void;
+}
+
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
+
+interface OtpFormValues {
+  otp: string;
+}
+
+const SignIn: React.FC<SignInProps> = ({ toggle }) => {
+  const [step, setStep] = useState<0 | 1>(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState(0);
   const navigate = useNavigate();
 
-  const [login, { isLoading }] = useLoginMutation();
-  const [otpCall] = useOtpMutation();
-  const shouldNavigateRef = useRef(false);
+  const [loginForm] = Form.useForm<LoginFormValues>();
+  const [otpForm] = Form.useForm<OtpFormValues>();
 
-  const dispatch = useDispatch();
-  const token = useSelector(selectCurrentToken);
+  const [login, { isLoading: isLoginLoading, error: loginError }] =
+    useLoginMutation();
+  const [otpCall, { isLoading: isOtpLoading, error: otpError }] =
+    useOtpMutation();
 
-  // Navigate when token becomes available after successful login
-  useEffect(() => {
-    if (shouldNavigateRef.current && token) {
-      navigate("/home");
-      shouldNavigateRef.current = false;
+  const handleLoginSubmit = async (values: LoginFormValues) => {
+    try {
+      const otp = await otpCall({
+        email: values.email,
+        password: values.password,
+      }).unwrap();
+
+      setEmail(values.email);
+      setPassword(values.password);
+
+      setStep(1);
+      message.success(
+        `OTP sent to ${otp.sent_to === "phone" ? otp.phone : otp.email}`
+      );
+    } catch (err) {
+      console.error("Failed to send OTP:", err);
     }
-  }, [token, navigate]);
+  };
 
-  const handleSubmit = async () => {
-    if (step == 0) {
-      try {
-        await otpCall({ email: email, password: password });
-        setStep(1);
-      } catch {
-        alert("aomething happened try again later");
-      }
-    } else {
-      try {
-        const userData = await login({ email, password, otp }).unwrap();
-        console.log("Login response:", userData);
+  const handleOtpSubmit = async (values: OtpFormValues) => {
+    try {
+      await login({
+        email,
+        password,
+        otp: values.otp,
+      }).unwrap();
+      message.success("Login successful!");
+      navigate("/home", { replace: true });
 
-        // Dispatch credentials
-        dispatch(setCredentials({ ...userData, email }));
-
-        // Wait for Redux state to update, then verify token is in store before navigating
-        let retryCount = 0;
-        const maxRetries = 10;
-
-        const checkAndNavigate = () => {
-          const currentState = store.getState();
-          const tokenInStore = currentState.auth.token;
-          console.log("Token in store:", tokenInStore, "Retry:", retryCount);
-
-          if (tokenInStore) {
-            console.log("Navigating to /home");
-            // Use requestAnimationFrame to ensure React has processed state updates
-            requestAnimationFrame(() => {
-              navigate("/home", { replace: true });
-            });
-          } else if (retryCount < maxRetries) {
-            // Retry after a short delay if token not yet in store
-            retryCount++;
-            setTimeout(checkAndNavigate, 50);
-          } else {
-            console.error("Token not found in store after max retries");
-            // Fallback: try navigating anyway
-            navigate("/home", { replace: true });
-          }
-        };
-
-        // Start checking after a brief delay to allow Redux to process
-        setTimeout(checkAndNavigate, 50);
-
-        setEmail("");
-        setPassword("");
-        setOtp("");
-        setStep(0);
-      } catch (err) {
-        console.error("Failed to login: ", err);
-      }
+      loginForm.resetFields();
+      otpForm.resetFields();
+      setEmail("");
+      setPassword("");
+      setStep(0);
+    } catch (err) {
+      console.error("Failed to login:", err);
     }
+  };
+
+  const handleBackToLogin = () => {
+    setStep(0);
+    otpForm.resetFields();
   };
 
   return (
@@ -90,61 +80,152 @@ const SignIn = ({ toggle }) => {
       {step === 0 ? (
         <>
           <div className="text-2xl font-medium">Login</div>
-          <div>
-            <label>Email</label>
-            <Input
-              value={email}
-              className="bg-transparent! border-2! border-[#D1E9FF]! "
-              placeholder="balamia@gmail.com"
-              onChange={(e) => {
-                setEmail(e.target.value);
-              }}
-            />
-          </div>
-          <div>
-            <label className="flex justify-between">
-              <div className="flex flex-col justify-end">Password</div>
-              <Button variant="link" color="primary">
-                Forgot
+
+          {otpError && (
+            <Alert title={otpError as string} type="error" closable showIcon />
+          )}
+
+          <Form
+            form={loginForm}
+            layout="vertical"
+            onFinish={handleLoginSubmit}
+            initialValues={{ email: "", password: "" }}
+          >
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                { required: true, message: "Please enter your email" },
+                { type: "email", message: "Please enter a valid email" },
+              ]}
+            >
+              <Input
+                className="bg-transparent! border-2! border-[#D1E9FF]!"
+                placeholder="balamia@gmail.com"
+                size="large"
+                disabled={isOtpLoading}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <div className="flex justify-between w-full">
+                  <span>Password</span>
+                  <Button type="link" size="small">
+                    Forgot
+                  </Button>
+                </div>
+              }
+              name="password"
+              rules={[
+                { required: true, message: "Please enter your password" },
+                { min: 8, message: "Password must be at least 6 characters" },
+              ]}
+            >
+              <Input.Password
+                className="bg-transparent! border-2! border-[#D1E9FF]!"
+                placeholder="Enter your password"
+                size="large"
+                disabled={isOtpLoading}
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                size="large"
+                htmlType="submit"
+                loading={isOtpLoading}
+                block
+              >
+                <span className="font-medium">Continue</span>
               </Button>
-            </label>
-            <Input.Password
-              value={password}
-              className="bg-transparent! border-2! border-[#D1E9FF]! "
-              placeholder="Enter your password"
-              onChange={(e) => {
-                setPassword(e.target.value);
-              }}
-            />
+            </Form.Item>
+          </Form>
+
+          <Button size="large" block>
+            <span className="font-medium text-[#1570EF]">
+              <GoogleOutlined className="mr-1" />
+              Continue with Google
+            </span>
+          </Button>
+
+          <div className="mx-auto">
+            Don't have an account?
+            <Button type="link" onClick={toggle}>
+              Sign up
+            </Button>
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center gap-4">
-          <label className="text-3xl font-bold">OTP</label>
-          <Input.OTP
-            className="m-auto gap-5!"
-            value={otp}
-            onChange={(e) => {
-              setOtp(e);
-            }}
-          />
-        </div>
+        <>
+          <Button
+            type="text"
+            onClick={handleBackToLogin}
+            className="self-start"
+          >
+            ← Back
+          </Button>
+
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-3xl font-bold">Enter OTP</div>
+            <div className="text-gray-500 text-center">
+              We've sent a verification code to
+              <br />
+              <span className="font-medium">{email}</span>
+            </div>
+
+            {loginError && (
+              <Alert
+                title={loginError as string}
+                type="error"
+                closable
+                showIcon
+                className="w-full"
+              />
+            )}
+
+            <Form form={otpForm} onFinish={handleOtpSubmit} className="w-full">
+              <Form.Item
+                name="otp"
+                rules={[
+                  { required: true, message: "Please enter the OTP" },
+                  { len: 6, message: "OTP must be 6 digits" },
+                ]}
+              >
+                <Input.OTP
+                  length={6}
+                  className="m-auto gap-5!"
+                  size="large"
+                  disabled={isLoginLoading}
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  size="large"
+                  htmlType="submit"
+                  loading={isLoginLoading}
+                  block
+                >
+                  <span className="font-medium">Verify & Login</span>
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <Button
+              type="link"
+              onClick={() => {
+                handleBackToLogin();
+                message.info("Please request a new OTP");
+              }}
+            >
+              Didn't receive code? Resend
+            </Button>
+          </div>
+        </>
       )}
-      <Button type="primary" size="large" onClick={handleSubmit}>
-        <div className="font-medium">Login</div>
-      </Button>
-      <Button size="large">
-        <div className="font-medium text-[#1570EF]">
-          <GoogleOutlined className="mr-1" />
-          Continue with Google
-        </div>
-      </Button>
-      <div className="mx-auto">
-        Dont have an account ?
-        <Button variant="link" color="primary" onClick={toggle}>
-          Sign up
-        </Button>
-      </div>
     </div>
   );
 };
