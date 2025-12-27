@@ -161,6 +161,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
         <>
           <Button
             type="text"
+            size="large"
             onClick={handleBackToLogin}
             className="self-start"
           >
@@ -169,11 +170,6 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
 
           <div className="flex flex-col items-center gap-4">
             <div className="text-3xl font-bold">Enter OTP</div>
-            <div className="text-gray-500 text-center">
-              We've sent a verification code to
-              <br />
-              <span className="font-medium">{email}</span>
-            </div>
 
             {loginError && (
               <Alert
@@ -185,7 +181,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
               />
             )}
 
-            <Form form={otpForm} onFinish={handleOtpSubmit} className="w-full">
+            <Form form={otpForm} onFinish={handleOtpSubmit}>
               <Form.Item
                 name="otp"
                 rules={[
@@ -195,7 +191,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
               >
                 <Input.OTP
                   length={6}
-                  className="m-auto gap-5!"
+                  className="gap-5! mx-auto!"
                   size="large"
                   disabled={isLoginLoading}
                 />
