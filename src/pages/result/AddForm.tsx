@@ -88,8 +88,8 @@ const AddForm = ({ setResultData, resultData }) => {
   const [runOptimization, { isLoading: isOptimizing }] =
     useRunOptimizationMutation();
   const [triggerStatusCheck] = useLazyGetOptimizationStatusQuery();
-  const { data: orders } = useGetOrdersForOptimizationQuery({});
-  const { data: drivers } = useGetDriversForOptimizationQuery({});
+  const { data: orders } = useGetOrdersForOptimizationQuery(undefined);
+  const { data: drivers } = useGetDriversForOptimizationQuery(undefined);
   const [updateAddress] = useUpdateAddressMutation();
   const dispatch = useDispatch();
 
@@ -326,24 +326,87 @@ const AddForm = ({ setResultData, resultData }) => {
         const names: Record<string, string> = {};
 
         if (drivers && Array.isArray(drivers)) {
-          const driversWithVehicles = drivers.filter(
-            (d: any) => d.vehicle || d.vehicle_id || d.vehicleId
-          );
+          console.log("=== DRIVER PROCESSING DEBUG ===");
+          console.log("Total drivers:", drivers.length);
+          console.log("First driver sample:", drivers[0]);
+          
+          // Filter drivers that have a vehicle assigned
+          // Vehicle can be an object (from serializer) or an ID
+          const driversWithVehicles = drivers.filter((d: any) => {
+            // Check if vehicle exists and is not null/undefined
+            if (d.vehicle) {
+              // If vehicle is an object, check if it has an id (even if null, the object exists)
+              if (typeof d.vehicle === 'object') {
+                return true; // Object exists, even if id is null
+              }
+              // If vehicle is a string (ID), it's valid
+              if (typeof d.vehicle === 'string') {
+                return true;
+              }
+            }
+            // Check alternative field names
+            if (d.vehicle_id || d.vehicleId) {
+              return true;
+            }
+            return false;
+          });
+
+          console.log("Drivers with vehicles:", driversWithVehicles.length);
+          console.log("Drivers with vehicles sample:", driversWithVehicles.slice(0, 2));
+
           driverIdsWithVehicles = driversWithVehicles
-            .map((d: any) => d.id || d.uuid)
-            .filter(Boolean);
+            .map((d: any) => {
+              // Try multiple ways to get the ID
+              const id = d.id || d.uuid || d.driver_id || d.driverId;
+              console.log("Mapping driver:", { 
+                id, 
+                hasId: !!d.id, 
+                hasUuid: !!d.uuid,
+                driverId: d.driver_id,
+                fullDriver: d,
+                vehicle: d.vehicle,
+                vehicleType: typeof d.vehicle,
+                vehicleId: d.vehicle?.id
+              });
+              return id;
+            })
+            .filter((id) => {
+              const isValid = Boolean(id) && id !== 'undefined' && id !== 'null';
+              if (!isValid) {
+                console.warn("Filtered out invalid ID:", id, typeof id);
+              }
+              return isValid;
+            });
+
+          console.log("Driver IDs with vehicles:", driverIdsWithVehicles);
+          console.log("Driver IDs count:", driverIdsWithVehicles.length);
+          console.log("================================");
 
           driversWithVehicles.forEach((d: any) => {
             const id = d.id || d.uuid;
-            names[id] = d.name || d.vehicle?.name || `Vehicle ${id}`;
+            // Get vehicle name from various possible locations
+            const vehicleName = 
+              d.vehicle?.name || 
+              d.vehicle?.license_plate || 
+              d.vehicle?.label ||
+              d.name || 
+              `Vehicle ${id}`;
+            names[id] = vehicleName;
           });
+        } else {
+          console.warn("Drivers data is not an array:", drivers);
         }
 
         if (driverIdsWithVehicles.length === 0) {
-          message.error("No drivers with vehicles found");
+          message.error("No drivers with vehicles found. Please ensure drivers have vehicles assigned.");
           setIsRunning(false);
           return;
         }
+
+        console.log("=== OPTIMIZATION REQUEST ===");
+        console.log("Driver IDs to send:", driverIdsWithVehicles);
+        console.log("Order IDs to send:", validOrderIds);
+        console.log("Form data:", formData);
 
         const saveResult = await saveConfig({
           ...formData,
@@ -351,7 +414,9 @@ const AddForm = ({ setResultData, resultData }) => {
           is_default: true,
         }).unwrap();
 
-        const runResult = await runOptimization({
+        console.log("Config saved, ID:", saveResult.id);
+
+        const optimizationPayload = {
           config_id: saveResult.id,
           driver_ids: driverIdsWithVehicles,
           order_ids: validOrderIds,
@@ -361,7 +426,11 @@ const AddForm = ({ setResultData, resultData }) => {
           allow_multiple_depot_visits: formData.allow_multiple_depot_visits,
           depot_visit_time_default: formData.depot_visit_time_default,
           policy: formData.policy,
-        }).unwrap();
+        };
+
+        console.log("Optimization payload:", optimizationPayload);
+
+        const runResult = await runOptimization(optimizationPayload).unwrap();
 
         if (runResult?.id) {
           setRunId(runResult.id);
@@ -370,7 +439,37 @@ const AddForm = ({ setResultData, resultData }) => {
       }
     } catch (err: any) {
       console.error("Optimization run failed:", err);
-      message.error(err.message || "Optimization failed");
+      console.error("Error details:", {
+        status: err?.status,
+        data: err?.data,
+        error: err?.error,
+        originalStatus: err?.originalStatus,
+      });
+      
+      // Extract error message from different possible error formats
+      let errorMessage = "Optimization failed";
+      if (err?.data) {
+        const errorData = err.data;
+        if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        } else if (errorData?.error) {
+          errorMessage = errorData.error;
+        } else if (Array.isArray(errorData) && errorData.length > 0) {
+          errorMessage = String(errorData[0]);
+        } else if (typeof errorData === 'object') {
+          const firstKey = Object.keys(errorData)[0];
+          if (firstKey) {
+            const firstError = errorData[firstKey];
+            errorMessage = `${firstKey}: ${Array.isArray(firstError) ? firstError.join(', ') : firstError}`;
+          }
+        }
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
+      message.error(errorMessage);
       setIsRunning(false);
     }
   };

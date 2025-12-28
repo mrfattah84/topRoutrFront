@@ -167,8 +167,10 @@ const AddFleet = ({ id = null }) => {
 
         // Get all form values
         const allFormData = form.getFieldsValue(true);
-        console.log("=== ORDER FORM SUBMISSION ===");
+        console.log("=== FLEET FORM SUBMISSION ===");
         console.log("Raw Form Data:", allFormData);
+        console.log("Vehicle value type:", typeof allFormData.vehicle, "Value:", allFormData.vehicle);
+        console.log("Is vehicle an array?", Array.isArray(allFormData.vehicle));
 
         const cost = await createCosts(allFormData.cost).unwrap();
 
@@ -179,16 +181,25 @@ const AddFleet = ({ id = null }) => {
         }).unwrap();
 
         // Format the data to match API schema
-        const formattedData = {
+        const formattedData: any = {
           // Required fields
           driver_user: allFormData.driver,
-          vehicle: allFormData.vehicle,
+          vehicle: allFormData.vehicle, // Ensure it's a string UUID, not an array
           owner: "304134c1-de91-4224-98f5-bc594946a8af",
-          start_location: allFormData.start_location,
-          end_location: allFormData.end_location,
+          // Convert undefined to null for optional fields
+          start_location: allFormData.start_location || null,
+          end_location: allFormData.end_location || null,
           cost: cost.id,
           work_schedule: scedule.id,
         };
+
+        // Ensure vehicle is a string, not an array
+        if (Array.isArray(formattedData.vehicle)) {
+          formattedData.vehicle = formattedData.vehicle[0];
+        }
+        if (typeof formattedData.vehicle !== 'string' && formattedData.vehicle) {
+          formattedData.vehicle = String(formattedData.vehicle);
+        }
 
         // Console log all collected data
         console.log("Formatted Fleet Data:", formattedData);
@@ -205,8 +216,32 @@ const AddFleet = ({ id = null }) => {
         dispatch(setForm(""));
         setStep(0);
         form.resetFields();
-      } catch (error) {
+      } catch (error: any) {
         console.error("Form submission failed:", error);
+        // Extract and display error message
+        let errorMessage = "Failed to create fleet. Please try again.";
+        if (error?.data) {
+          const errorData = error.data;
+          if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else if (errorData.vehicle) {
+            errorMessage = `Vehicle error: ${Array.isArray(errorData.vehicle) ? errorData.vehicle.join(', ') : errorData.vehicle}`;
+          } else if (errorData.driver_user) {
+            errorMessage = `Driver error: ${Array.isArray(errorData.driver_user) ? errorData.driver_user.join(', ') : errorData.driver_user}`;
+          } else if (errorData.non_field_errors) {
+            errorMessage = Array.isArray(errorData.non_field_errors) 
+              ? errorData.non_field_errors.join(', ') 
+              : errorData.non_field_errors;
+          } else {
+            // Try to get first error message
+            const firstKey = Object.keys(errorData)[0];
+            if (firstKey) {
+              const firstError = errorData[firstKey];
+              errorMessage = `${firstKey}: ${Array.isArray(firstError) ? firstError.join(', ') : firstError}`;
+            }
+          }
+        }
+        alert(errorMessage);
       }
     }
   };

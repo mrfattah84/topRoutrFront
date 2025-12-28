@@ -35,13 +35,18 @@ export const orderTableApi = apiSlice.injectEndpoints({
             "getOrders",
             undefined,
             (draft) => {
-              const order = draft.find((order) => order.id === id);
+              const order = draft.find((order: any) => order.id === id);
               if (order) {
                 order.activated = activated;
               }
             }
           )
         );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
       },
     }),
   }),

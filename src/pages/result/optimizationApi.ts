@@ -46,6 +46,7 @@ export const optimizationApi = apiSlice.injectEndpoints({
       query: () => ({
         url: "drivers/",
       }),
+      providesTags: ["Fleet"],
     }),
 
     // Update address (for geocoding)

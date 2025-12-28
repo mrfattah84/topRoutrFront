@@ -4,11 +4,11 @@ const orderTableSlice = createSlice({
   name: "orderTable",
   initialState: { selectedOrders: [], date: {} },
   reducers: {
-    setSelectedRowKeys: (state, payload) => {
-      state.selectedOrders = payload;
+    setSelectedRowKeys: (state, action) => {
+      state.selectedOrders = action.payload;
     },
-    setDate: (state, payload) => {
-      state.date = payload;
+    setDate: (state, action) => {
+      state.date = action.payload;
     },
   },
   selectors: {

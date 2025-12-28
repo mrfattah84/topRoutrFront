@@ -8,14 +8,18 @@ import { setCredentials, selectCurrentToken } from "./authSlice";
 import { useLoginMutation, useOtpMutation } from "./authApi";
 import { store } from "../../store";
 
-const SignIn = ({ toggle }) => {
+interface SignInProps {
+  toggle: () => void;
+}
+
+const SignIn = ({ toggle }: SignInProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
 
-  const [login, { isLoading }] = useLoginMutation();
+  const [login] = useLoginMutation();
   const [otpCall] = useOtpMutation();
   const shouldNavigateRef = useRef(false);
 
@@ -32,11 +36,56 @@ const SignIn = ({ toggle }) => {
 
   const handleSubmit = async () => {
     if (step == 0) {
+      // Validate inputs before making the request
+      if (!email || !email.trim()) {
+        alert("Please enter your email address.");
+        return;
+      }
+      if (!password || !password.trim()) {
+        alert("Please enter your password.");
+        return;
+      }
+
       try {
-        await otpCall({ email: email, password: password });
+        const result = await otpCall({ email: email.trim(), password: password });
+        if ('error' in result && result.error) {
+          console.error('OTP request error:', result.error);
+          // Extract error message from different possible error formats
+          const errorData = 'data' in result.error ? result.error.data : undefined;
+          let errorMessage = 'Failed to request OTP. Please try again.';
+          
+          if (errorData) {
+            if (typeof errorData === 'string') {
+              errorMessage = errorData;
+            } else if (typeof errorData === 'object' && errorData !== null) {
+              if ('error' in errorData && typeof errorData.error === 'string') {
+                errorMessage = errorData.error;
+              } else if ('message' in errorData && typeof errorData.message === 'string') {
+                errorMessage = errorData.message;
+              } else if (Array.isArray(errorData) && errorData.length > 0) {
+                errorMessage = String(errorData[0]);
+              } else {
+                // Try to get first error message from object
+                const firstKey = Object.keys(errorData)[0];
+                if (firstKey) {
+                  const firstError = (errorData as any)[firstKey];
+                  errorMessage = Array.isArray(firstError) ? String(firstError[0]) : String(firstError);
+                }
+              }
+            }
+          }
+          alert(errorMessage);
+          return;
+        }
         setStep(1);
-      } catch {
-        alert("aomething happened try again later");
+      } catch (error: unknown) {
+        console.error('OTP request exception:', error);
+        let errorMessage = 'Something happened. Please try again later.';
+        if (error && typeof error === 'object') {
+          const err = error as { data?: { error?: string; message?: string }; message?: string };
+          errorMessage = err?.data?.error || err?.data?.message || err?.message || errorMessage;
+        }
+        alert(errorMessage);
       }
     } else {
       try {

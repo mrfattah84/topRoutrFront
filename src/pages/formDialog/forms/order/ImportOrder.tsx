@@ -150,7 +150,7 @@ const ImportOrder = () => {
   const [allFileData, setAllFileData] = useState<any[]>([]);
   const [showAddOrigin, setShowAddOrigin] = useState(false);
 
-  const { data: preDefinedLatLongs } = useGetDefinedLatLonsQuery();
+  const { data: preDefinedLatLongs = [] } = useGetDefinedLatLonsQuery(undefined);
   const [createAddress] = useAddAddressMutation();
   const [createItem] = useAddItemMutation();
   const [createOrder] = useCreateOrderMutation();
@@ -322,93 +322,176 @@ const ImportOrder = () => {
       // 2. Create orders with the transformed data
       // 3. Handle any errors and show progress
 
-      transformedOrders.forEach(async (order) => {
-        let sourceId = form.getFieldValue("source_id");
-        let destinationId = null;
-
-        preDefinedLatLongs.forEach((Address) => {
-          if (
-            order?.source_latitude &&
-            order?.source_longitude &&
-            Address.latitude == order.source_latitude &&
-            Address.longitude == order.source_longitude
-          ) {
-            sourceId = Address.uid;
-          }
-
-          if (
-            Address.latitude == order.destination_latitude &&
-            Address.longitude == order.destination_longitude
-          ) {
-            destinationId = Address.uid;
-          }
-        });
-
-        if (order?.source_latitude && order?.source_longitude) {
-          sourceId = await createAddress({
-            description: order.source_address_text || "UPLOAD",
-            location_data: {
-              latitude: order.source_latitude || "UPLOAD",
-              longitude: order.source_longitude || "UPLOAD",
-            },
-          }).unwrap();
-          console.log(sourceId);
-        }
-
-        if (!destinationId) {
-          destinationId = await createAddress({
-            description: order.destination_address_text || "UPLOAD",
-            location_data: {
-              latitude: order.destination_latitude || "UPLOAD",
-              longitude: order.destination_longitude || "UPLOAD",
-            },
-          }).unwrap();
-        }
-
-        const itemId = await createItem({
-          description: "UPLOAD",
-          volume: order.volume || null,
-          weight: order.weight || null,
-        });
-
-        const formatted_delivery_date = order.delivery_date.replaceAll(
-          "/",
-          "-"
+      // Helper function to find address by coordinates with tolerance
+      const findAddressByCoords = (lat: number, lng: number, tolerance: number = 0.0001) => {
+        return preDefinedLatLongs.find(
+          (addr: any) =>
+            addr.latitude &&
+            addr.longitude &&
+            Math.abs(addr.latitude - lat) < tolerance &&
+            Math.abs(addr.longitude - lng) < tolerance
         );
+      };
 
-        createOrder({
-          source_id: sourceId?.uid || sourceId,
-          destination_id: destinationId?.uid || destinationId,
-          delivery_date: formatted_delivery_date,
-          activated: false,
-          delivery_time_to:
-            dayjs()
-              .second((parseInt(order.delivery_time_to) % 1) * 86400)
-              .format("HH:mm") || null,
-          delivery_time_from:
-            dayjs()
-              .second((parseInt(order.delivery_time_from) % 1) * 86400)
-              .format("HH:mm") || null,
-          stop_time: order?.stop_time
-            ? dayjs()
-                .startOf("day")
-                .minute(parseInt(order.stop_time))
-                .format("HH:mm:ss")
-            : form?.getFieldValue("stop_time") || "00:05",
-          order_number: order.order_number,
-          code: order.code || null,
-          description: "created by UPLOAD",
-          order_type: "delivery",
-          order_date: order.order_date || null,
-          priority: order.priority || null,
-          order_item_id: [
-            {
-              id: itemId.data.id,
-              quantity: order?.quantity || 1,
+      // Helper function to get or create address
+      const getOrCreateAddress = async (
+        description: string,
+        latitude: number,
+        longitude: number
+      ) => {
+        // First check if address exists in preDefinedLatLongs
+        const existing = findAddressByCoords(latitude, longitude);
+        if (existing) {
+          return existing.uid;
+        }
+
+        // Try to create address, handle duplicates
+        try {
+          const result = await createAddress({
+            description: description || `UPLOAD-${latitude}-${longitude}`,
+            location_data: {
+              latitude: latitude,
+              longitude: longitude,
             },
-          ],
-        });
-      });
+          }).unwrap();
+          return result?.uid || result;
+        } catch (error: any) {
+          // If duplicate error, try to find existing address
+          if (error?.status === 500 || error?.status === 400) {
+            const errorData = error?.data || error?.error?.data;
+            if (
+              typeof errorData === 'string' &&
+              (errorData.includes('duplicate') || errorData.includes('IntegrityError'))
+            ) {
+              // Search for existing address by description or coordinates
+              const existingByDesc = preDefinedLatLongs.find(
+                (addr: any) => addr.description === description
+              );
+              if (existingByDesc) {
+                return existingByDesc.uid;
+              }
+              // If still not found, search again with coordinates (might have been added)
+              const existingByCoords = findAddressByCoords(latitude, longitude);
+              if (existingByCoords) {
+                return existingByCoords.uid;
+              }
+              console.warn(
+                `Duplicate address detected but could not find existing: ${description}`
+              );
+              // Return a placeholder or throw
+              throw new Error(
+                `Address already exists but could not be retrieved: ${description}`
+              );
+            }
+          }
+          throw error;
+        }
+      };
+
+      // Process orders sequentially to avoid race conditions
+      for (const order of transformedOrders) {
+        let sourceId = form.getFieldValue("source_id");
+        let destinationId: string | null = null;
+
+        // Check for existing source address
+        if (order?.source_latitude && order?.source_longitude) {
+          const existingSource = findAddressByCoords(
+            order.source_latitude,
+            order.source_longitude
+          );
+          if (existingSource) {
+            sourceId = existingSource.uid;
+          } else {
+            // Only create if not found
+            sourceId = await getOrCreateAddress(
+              order.source_address_text || "UPLOAD",
+              order.source_latitude,
+              order.source_longitude
+            );
+          }
+        }
+
+        // Check for existing destination address
+        if (order?.destination_latitude && order?.destination_longitude) {
+          const existingDest = findAddressByCoords(
+            order.destination_latitude,
+            order.destination_longitude
+          );
+          if (existingDest) {
+            destinationId = existingDest.uid;
+          } else {
+            // Only create if not found
+            destinationId = await getOrCreateAddress(
+              order.destination_address_text || "UPLOAD",
+              order.destination_latitude,
+              order.destination_longitude
+            );
+          }
+        }
+
+        // Validate that we have required IDs
+        if (!sourceId) {
+          console.error("Missing source address ID for order:", order.order_number);
+          continue;
+        }
+        if (!destinationId) {
+          console.error("Missing destination address ID for order:", order.order_number);
+          continue;
+        }
+
+        try {
+          const itemId = await createItem({
+            description: "UPLOAD",
+            volume: order.volume || null,
+            weight: order.weight || null,
+          });
+
+          const formatted_delivery_date = order.delivery_date.replaceAll(
+            "/",
+            "-"
+          );
+
+          await createOrder({
+            source_id: sourceId,
+            destination_id: destinationId,
+            delivery_date: formatted_delivery_date,
+            activated: false,
+            delivery_time_to:
+              order.delivery_time_to
+                ? dayjs()
+                    .second((parseInt(String(order.delivery_time_to)) % 1) * 86400)
+                    .format("HH:mm")
+                : null,
+            delivery_time_from:
+              order.delivery_time_from
+                ? dayjs()
+                    .second((parseInt(String(order.delivery_time_from)) % 1) * 86400)
+                    .format("HH:mm")
+                : null,
+            stop_time: order?.stop_time
+              ? dayjs()
+                  .startOf("day")
+                  .minute(parseInt(String(order.stop_time)))
+                  .format("HH:mm:ss")
+              : form?.getFieldValue("stop_time") || "00:05",
+            order_number: order.order_number,
+            code: order.code || null,
+            description: "created by UPLOAD",
+            order_type: "delivery",
+            order_date: order.order_date || null,
+            priority: order.priority || null,
+            order_item_id: [
+              {
+                id: itemId.data.id,
+                quantity: order?.quantity || 1,
+              },
+            ],
+          }).unwrap();
+        } catch (error: any) {
+          console.error(`Failed to create order ${order.order_number}:`, error);
+          // Continue with next order instead of stopping
+        }
+      }
 
       alert(`Successfully imported ${transformedOrders.length} orders!`);
 
