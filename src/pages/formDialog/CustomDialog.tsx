@@ -32,12 +32,7 @@ const CustomDialog = () => {
 
   // Handle opening the modal when menue or form changes
   useEffect(() => {
-    if (menue === "data-calendar") {
-      dispatch(setDate(""));
-      setOpen(true);
-      // Clear the menue selection after opening
-      dispatch(setSidebarMenue(""));
-    } else if (menue && form ) {
+    if (menue && form) {
       setOpen(true);
     } else if (menue && !form) {
       setOpen(false);
@@ -57,8 +52,10 @@ const CustomDialog = () => {
   // Function to render the appropriate content based on menue and form
   const renderModalContent = () => {
     // Calendar view (no form needed)
-    if (menue === "data-calendar" || (!menue && !form)) {
-      return <Calendar onDateSelect={handleDateSelect} />;
+    if (menue === "data") {
+      if (form === "calendar") {
+        return <Calendar onDateSelect={handleDateSelect} />;
+      }
     }
 
     // Form-based views
@@ -128,10 +125,6 @@ const CustomDialog = () => {
 
   // Function to get the modal title
   const getModalTitle = () => {
-    if (menue == "data-calendar" || (!menue && !form)) {
-      return "Calendar";
-    }
-
     if (form) {
       return `${form} - ${menue?.replace("data-", "") || ""}`;
     }

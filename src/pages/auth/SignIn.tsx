@@ -24,8 +24,6 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
   const [step, setStep] = useState<0 | 1>(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState(0);
   const navigate = useNavigate();
 
   const [loginForm] = Form.useForm<LoginFormValues>();

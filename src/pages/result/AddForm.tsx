@@ -382,14 +382,6 @@ const AddForm = ({ setResultData, resultData }) => {
         className="m-0! mb-2! !font-bold !text-[#0A214A] flex justify-between items-center"
       >
         Policy Configuration
-        <Button
-          type="primary"
-          shape="circle"
-          size="small"
-          onClick={() => dispatch(setSidebarMenue(""))}
-        >
-          X
-        </Button>
       </Title>
 
       <div className="flex flex-col gap-2">

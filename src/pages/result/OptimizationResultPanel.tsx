@@ -158,14 +158,6 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
               className="flex justify-between items-center w-full mb-0!"
             >
               Summary
-              <Button
-                type="primary"
-                shape="circle"
-                size="small"
-                onClick={() => dispatch(setSidebarMenue(""))}
-              >
-                X
-              </Button>
             </Title>
           </div>
 

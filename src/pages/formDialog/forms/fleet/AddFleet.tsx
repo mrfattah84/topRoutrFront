@@ -183,7 +183,6 @@ const AddFleet = ({ id = null }) => {
           // Required fields
           driver_user: allFormData.driver,
           vehicle: allFormData.vehicle,
-          owner: "304134c1-de91-4224-98f5-bc594946a8af",
           start_location: allFormData.start_location,
           end_location: allFormData.end_location,
           cost: cost.id,
