@@ -1,13 +1,14 @@
-import React, { useEffect, useRef } from "react";
-import { useSelector } from "react-redux";
+import React, { useDebugValue, useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { selectPoints, selectRoutes } from "./mapSlice";
+import { selectPoints, selectRoutes, setFocus } from "./mapSlice";
 
 const MapComponent = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersRef = useRef([]);
+  const dispatch = useDispatch();
   // Selectors
   const points = useSelector(selectPoints);
   const routes = useSelector(selectRoutes);
@@ -39,7 +40,7 @@ const MapComponent = () => {
       zoom: 10,
     });
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl(), "top-left");
   }, []);
 
   // --- SYNC POINTS (Markers) ---
@@ -63,7 +64,9 @@ const MapComponent = () => {
         .setLngLat(p.coords) // Expecting [lng, lat] or {lng, lat}
         .setPopup(popup)
         .addTo(map.current);
-
+      marker.getElement().addEventListener("click", () => {
+        dispatch(setFocus(p.id || ""));
+      });
       markersRef.current.push(marker);
       bounds.extend(p.coords);
     });
@@ -162,7 +165,7 @@ const MapComponent = () => {
     }
   }, [routes]);
 
-  return <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />;
+  return <div ref={mapContainer} className="w-full h-full"></div>;
 };
 
 export default MapComponent;

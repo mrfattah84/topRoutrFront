@@ -1,32 +1,61 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-const initialState = {
+interface Point {
+  id?: string;
+  name: string;
+  description: string | number;
+  color: string;
+  coords: [number, number] | { lat: number; lng: number };
+}
+
+interface Route {
+  id: string;
+  coordinates: [number, number][] | { lat: number; lng: number }[];
+  color: string;
+}
+
+interface MapSlice {
+  points: Point[];
+  routes: Route[];
+  focus: string;
+}
+
+const initialState: MapSlice = {
   points: [],
-  routes: [], // Array of { id, coordinates, color }
+  routes: [],
+  focus: "",
 };
 
 const mapSlice = createSlice({
   name: "map",
   initialState,
   reducers: {
-    setRoutes: (state, action) => {
+    setRoutes: (state, action: PayloadAction<Route[]>) => {
       // Replaces current routes
       state.routes = action.payload;
     },
-    setPoints: (state, action) => {
+    setPoints: (state, action: PayloadAction<Point[]>) => {
       state.points = action.payload;
     },
-    addPoint: (state, action) => {
+    addPoint: (state, action: PayloadAction<Point>) => {
       state.points.push(action.payload);
     },
     clearMap: (state) => {
       state.routes = [];
       state.points = [];
     },
+    setFocus: (state, action: PayloadAction<string>) => {
+      state.focus = action.payload;
+    },
+  },
+  selectors: {
+    selectPoints: (state) => state.points,
+    selectRoutes: (state) => state.routes,
+    selectFocus: (state) => state.focus,
   },
 });
 
-export const { setRoutes, setPoints, addPoint, clearMap } = mapSlice.actions;
-export const selectPoints = (state) => state.map.points;
-export const selectRoutes = (state) => state.map.routes;
+export const { setRoutes, setPoints, addPoint, clearMap, setFocus } =
+  mapSlice.actions;
+export const { selectPoints, selectRoutes, selectFocus } = mapSlice.selectors;
 export default mapSlice.reducer;

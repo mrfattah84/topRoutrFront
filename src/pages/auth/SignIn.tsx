@@ -2,10 +2,8 @@ import { GoogleOutlined } from "@ant-design/icons";
 import { Input, Button, Form, Alert, message } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import { useDispatch, useSelector } from "react-redux";
-import { setCredentials, selectCurrentToken } from "./authSlice";
 import { useLoginMutation, useOtpMutation } from "./authApi";
+import { useDispatch } from "react-redux";
 
 interface SignInProps {
   toggle: () => void;
@@ -28,6 +26,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
 
   const [loginForm] = Form.useForm<LoginFormValues>();
   const [otpForm] = Form.useForm<OtpFormValues>();
+  const dispatch = useDispatch();
 
   const [login, { isLoading: isLoginLoading, error: loginError }] =
     useLoginMutation();
@@ -59,11 +58,16 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
         email,
         password,
         otp: values.otp,
-      }).unwrap();
+      })
+        .unwrap()
+        .then((result) => {
+          localStorage.setItem("token", result.access_token);
+          localStorage.setItem("user", JSON.stringify(result.user));
+        });
       message.success("Login successful!");
       navigate("/home", { replace: true });
+      // dispatch(setCredentials(res));
 
-      loginForm.resetFields();
       otpForm.resetFields();
       setEmail("");
       setPassword("");
