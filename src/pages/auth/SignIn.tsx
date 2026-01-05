@@ -62,7 +62,7 @@ const SignIn: React.FC<SignInProps> = ({ toggle }) => {
         .unwrap()
         .then((result) => {
           localStorage.setItem("token", result.access_token);
-          localStorage.setItem("user", JSON.stringify(result.user));
+          localStorage.setItem("refresh", result.refresh_token);
         });
       message.success("Login successful!");
       navigate("/home", { replace: true });
