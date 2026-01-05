@@ -1,23 +1,29 @@
-import React, { useDebugValue, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { selectPoints, selectRoutes, setFocus } from "./mapSlice";
+import { selectFocus, selectPoints, selectRoutes, setFocus } from "./mapSlice";
 
 const MapComponent = () => {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const markersRef = useRef([]);
+  const mapContainer = useRef<HTMLDivElement | null>(null);
+  const map = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const prevViewState = useRef<{
+    center: maplibregl.LngLat;
+    zoom: number;
+  } | null>(null);
   const dispatch = useDispatch();
   // Selectors
   const points = useSelector(selectPoints);
   const routes = useSelector(selectRoutes);
+  const focus = useSelector(selectFocus);
 
   // Initialize Map
   useEffect(() => {
-    if (map.current) return;
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
+    if (map.current || !mapContainer.current) return; // wait for map and container
+
+    const mapInstance = new maplibregl.Map({
+      container: mapContainer.current!,
       style: {
         version: 8,
         sources: {
@@ -40,12 +46,14 @@ const MapComponent = () => {
       zoom: 10,
     });
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-left");
+    mapInstance.addControl(new maplibregl.NavigationControl(), "top-left");
+    map.current = mapInstance;
   }, []);
 
   // --- SYNC POINTS (Markers) ---
   useEffect(() => {
-    if (!map.current) return;
+    const mapInstance = map.current;
+    if (!mapInstance) return;
 
     // Clear old markers
     markersRef.current.forEach((m) => m.remove());
@@ -63,9 +71,15 @@ const MapComponent = () => {
       const marker = new maplibregl.Marker({ color: p.color })
         .setLngLat(p.coords) // Expecting [lng, lat] or {lng, lat}
         .setPopup(popup)
-        .addTo(map.current);
+        .addTo(mapInstance);
       marker.getElement().addEventListener("click", () => {
-        dispatch(setFocus(p.id || ""));
+        dispatch(
+          setFocus({
+            id: p.id,
+            center: p.coords,
+            zoom: 15,
+          })
+        );
       });
       markersRef.current.push(marker);
       bounds.extend(p.coords);
@@ -73,26 +87,27 @@ const MapComponent = () => {
 
     // Only fit bounds if we have points and NO routes (routes usually take priority)
     if (points.length > 0 && (!routes || routes.length === 0)) {
-      map.current.fitBounds(bounds, { padding: 70, maxZoom: 12 });
+      mapInstance.fitBounds(bounds, { padding: 70, maxZoom: 12 });
     }
   }, [points, routes]);
 
   // --- SYNC ROUTES (Lines) ---
   useEffect(() => {
-    if (!map.current) return;
+    const mapInstance = map.current;
+    if (!mapInstance) return;
 
     // 1. Clean up OLD routes that are no longer in the Redux store
     // Get all current style layers
-    const style = map.current.getStyle();
+    const style = mapInstance.getStyle();
     if (style && style.layers) {
       style.layers.forEach((layer) => {
         if (layer.id.startsWith("route-layer-")) {
           const routeId = layer.id.replace("route-layer-", "");
           // If this ID is not in the new props, remove it
           if (!routes.find((r) => r.id === routeId)) {
-            map.current.removeLayer(layer.id);
-            if (map.current.getSource(`route-${routeId}`)) {
-              map.current.removeSource(`route-${routeId}`);
+            mapInstance.removeLayer(layer.id);
+            if (mapInstance.getSource(`route-${routeId}`)) {
+              mapInstance.removeSource(`route-${routeId}`);
             }
           }
         }
@@ -108,17 +123,10 @@ const MapComponent = () => {
       const sourceId = `route-${route.id}`;
       const layerId = `route-layer-${route.id}`;
 
-      // Ensure coords are [lng, lat] arrays for GeoJSON
-      const formattedCoords = route.coordinates.map((c) => {
-        const lng = typeof c.lng === "number" ? c.lng : c[0];
-        const lat = typeof c.lat === "number" ? c.lat : c[1];
-        return [lng, lat];
-      });
-
-      if (formattedCoords.length === 0) return;
+      if (route.coordinates.length === 0) return;
 
       // Extend bounds to include this route
-      formattedCoords.forEach((coord) => bounds.extend(coord));
+      route.coordinates.forEach((coord) => bounds.extend(coord));
       hasValidCoords = true;
 
       // If Source exists, update data; else add Source
@@ -127,22 +135,24 @@ const MapComponent = () => {
         properties: {},
         geometry: {
           type: "LineString",
-          coordinates: formattedCoords,
+          coordinates: route.coordinates,
         },
       };
 
-      if (map.current.getSource(sourceId)) {
-        map.current.getSource(sourceId).setData(geoJsonData);
+      if (mapInstance.getSource(sourceId)) {
+        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).setData(
+          geoJsonData as GeoJSON.Feature
+        );
       } else {
-        map.current.addSource(sourceId, {
+        mapInstance.addSource(sourceId, {
           type: "geojson",
-          data: geoJsonData,
+          data: geoJsonData as GeoJSON.Feature,
         });
       }
 
       // If Layer doesn't exist, add it
-      if (!map.current.getLayer(layerId)) {
-        map.current.addLayer({
+      if (!mapInstance.getLayer(layerId)) {
+        mapInstance.addLayer({
           id: layerId,
           type: "line",
           source: sourceId,
@@ -161,9 +171,44 @@ const MapComponent = () => {
 
     // 2. Zoom map to show the new route(s)
     if (hasValidCoords) {
-      map.current.fitBounds(bounds, { padding: 50 });
+      mapInstance.fitBounds(bounds, { padding: 50 });
     }
   }, [routes]);
+
+  // --- HANDLE FOCUS ---
+  useEffect(() => {
+    const mapInstance = map.current;
+    if (!mapInstance) return;
+
+    // If a new focus is set
+    if (focus?.id) {
+      // Save the current view state only if we don't already have a "return" state saved.
+      // This ensures we save the state from *before* the first focus action.
+      if (!prevViewState.current) {
+        prevViewState.current = {
+          center: mapInstance.getCenter(),
+          zoom: mapInstance.getZoom(),
+        };
+      }
+
+      // Animate to the focused item's location
+      mapInstance.flyTo({
+        center: focus.center,
+        zoom: focus.zoom || 15, // Use a default zoom if not provided
+        speed: 1.2,
+      });
+    } else {
+      // If focus is cleared, return to the previously saved view state
+      if (prevViewState.current) {
+        mapInstance.flyTo({
+          ...prevViewState.current,
+          speed: 1.2,
+        });
+        // Clear the saved state so it can be set again on the next focus
+        prevViewState.current = null;
+      }
+    }
+  }, [focus]);
 
   return <div ref={mapContainer} className="w-full h-full"></div>;
 };

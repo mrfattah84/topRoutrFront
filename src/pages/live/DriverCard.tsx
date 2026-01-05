@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import type { Fleet } from "../table/fleet/fleetTableApi";
-import { Checkbox } from "antd";
-import ProgressBar from "./ProgressBar";
-import { MessageFilled, PhoneFilled } from "@ant-design/icons";
+import { Button, Checkbox } from "antd";
+import {
+  CaretDownOutlined,
+  CaretLeftOutlined,
+  MessageFilled,
+  PhoneFilled,
+} from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { decodePolyline6 } from "../result/polyLine";
 import { addPoint, clearMap, setRoutes } from "../map/mapSlice";
@@ -78,12 +82,19 @@ const DriverCard = (props: { data: Fleet; checked: boolean }) => {
             </div>
           </div>
         </div>
-        ###
+        <div className="flex flex-col items-end">
+          <div className="font-bold">###</div>
+          <div
+            className="font-bold text-xs"
+            onClick={() => {
+              setMode(!mode);
+            }}
+          >
+            {mode ? <CaretDownOutlined /> : <CaretLeftOutlined />}
+          </div>
+        </div>
       </div>
       <div
-        onClick={() => {
-          setMode(!mode);
-        }}
         // We use a pseudo-element for the dashed line.
         // The container is relative, and the ::before is absolute.
         className={`relative flex cursor-pointer my-3 w-full ${
@@ -102,14 +113,22 @@ const DriverCard = (props: { data: Fleet; checked: boolean }) => {
           );
         })}
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center">
         <div className="font-bold">
           DriverName: {props.data.driver_user.first_name}{" "}
           {props.data.driver_user.last_name}
         </div>
         <div className="flex gap-2">
-          <PhoneFilled />
-          <MessageFilled />
+          <Button
+            href={`tel:${props.data.driver_user.phone}`}
+            icon={<PhoneFilled />}
+            type="text"
+          />
+          <Button
+            href={`mailto:${props.data.driver_user.email}`}
+            icon={<MessageFilled />}
+            type="text"
+          />
         </div>
       </div>
     </div>

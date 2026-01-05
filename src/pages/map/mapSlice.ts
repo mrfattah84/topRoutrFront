@@ -5,25 +5,34 @@ interface Point {
   name: string;
   description: string | number;
   color: string;
-  coords: [number, number] | { lat: number; lng: number };
+  coords: [number, number];
 }
 
 interface Route {
   id: string;
-  coordinates: [number, number][] | { lat: number; lng: number }[];
+  coordinates: [number, number][];
   color: string;
+}
+
+interface Focus {
+  id?: string;
+  center?: [number, number];
+  zoom?: number;
 }
 
 interface MapSlice {
   points: Point[];
   routes: Route[];
-  focus: string;
+  focus: Focus;
 }
 
 const initialState: MapSlice = {
   points: [],
   routes: [],
-  focus: "",
+  focus: {
+    center: [51.3755, 35.7448], // Default center
+    zoom: 10,
+  },
 };
 
 const mapSlice = createSlice({
@@ -44,7 +53,7 @@ const mapSlice = createSlice({
       state.routes = [];
       state.points = [];
     },
-    setFocus: (state, action: PayloadAction<string>) => {
+    setFocus: (state, action: PayloadAction<Focus>) => {
       state.focus = action.payload;
     },
   },

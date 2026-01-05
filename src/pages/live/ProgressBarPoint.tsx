@@ -1,10 +1,6 @@
-import React from "react";
-import { useGetOrderQuery } from "../formDialog/forms/order/orderApi";
-import { Divider } from "antd";
 import type { Job } from "./liveApi";
 import { useDispatch } from "react-redux";
 import { setFocus } from "../map/mapSlice";
-import Item from "antd/es/list/Item";
 
 const ProgressBarPoint = (props: { show: boolean; item: Job }) => {
   const dispatch = useDispatch();
@@ -12,7 +8,13 @@ const ProgressBarPoint = (props: { show: boolean; item: Job }) => {
     <div
       className="z-10 p-0.5 flex gap-2 items-center"
       onClick={() => {
-        dispatch(setFocus(props.item.order_uuid || ""));
+        dispatch(
+          setFocus({
+            id: props.item.order_uuid || undefined,
+            center: props.item.location,
+            zoom: 15,
+          })
+        );
       }}
     >
       {/* This inner div is the colored point */}

@@ -1,7 +1,5 @@
-export function decodePolyline6(
-  encoded: string
-): Array<{ lng: number; lat: number }> {
-  const coordinates: Array<{ lng: number; lat: number }> = [];
+export function decodePolyline6(encoded: string): Array<[number, number]> {
+  const coordinates: Array<[number, number]> = [];
   let index = 0;
   let lat = 0;
   let lng = 0;
@@ -46,10 +44,7 @@ export function decodePolyline6(
       finalLng = lng / 1e5;
     }
 
-    coordinates.push({
-      lng: finalLng,
-      lat: finalLat,
-    });
+    coordinates.push([finalLng, finalLat]);
   }
 
   return coordinates;

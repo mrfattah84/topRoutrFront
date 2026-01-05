@@ -84,21 +84,6 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
     // Use the utility we just fixed
     let coords = decodePolyline6(vehicle.geometry);
 
-    // Fallback to steps if geometry is missing
-    if (coords.length === 0 && vehicle.steps) {
-      coords = vehicle.steps.map((s: any) => ({
-        lng: s.location[0],
-        lat: s.location[1],
-      }));
-    }
-
-    // Final check: If coordinates are still 'small' (3.5 instead of 35),
-    // the utility's auto-correction didn't catch it.
-    const finalized = coords.map((c) => ({
-      lat: c.lat < 10 ? c.lat * 10 : c.lat,
-      lng: c.lng < 10 ? c.lng * 10 : c.lng,
-    }));
-
     dispatch(clearMap());
     for (let i = 0; i < vehicle.steps.length; i++) {
       const step = vehicle.steps[i];
@@ -140,7 +125,7 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
         {
           id: vehicleId,
           color: getVehicleColors(index).primary,
-          coordinates: finalized,
+          coordinates: coords,
         },
       ])
     );

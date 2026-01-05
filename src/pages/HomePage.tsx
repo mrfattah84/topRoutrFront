@@ -44,7 +44,7 @@ const HomePage = () => {
           <Button className="border-[#0B1F40]! border-2!">Logout</Button>
         </Header>
 
-        <Content className=" relative">
+        <Content className="relative">
           <Map />
           <Description />
           <CustomDialog />
