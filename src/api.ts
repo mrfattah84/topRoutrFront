@@ -4,10 +4,9 @@ const baseQuery = fetchBaseQuery({
   credentials: "include",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("token");
-    if (token) {
+    if (token && token !== "undefined") {
       headers.set("authorization", `Bearer ${token}`);
     }
-    console.log({ ...headers });
     return headers;
   },
 });
