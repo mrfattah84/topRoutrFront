@@ -2,12 +2,21 @@ import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { selectFocus, selectPoints, selectRoutes, setFocus } from "./mapSlice";
+import {
+  selectActualPoints,
+  selectActualRoutes,
+  selectFocus,
+  selectPoints,
+  selectRoutes,
+  setDriverFocus,
+  setFocus,
+} from "./mapSlice";
 
 const MapComponent = () => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const actualMarkersRef = useRef<maplibregl.Marker[]>([]);
   const prevViewState = useRef<{
     center: maplibregl.LngLat;
     zoom: number;
@@ -15,7 +24,9 @@ const MapComponent = () => {
   const dispatch = useDispatch();
   // Selectors
   const points = useSelector(selectPoints);
+  const actualPoints = useSelector(selectActualPoints);
   const routes = useSelector(selectRoutes);
+  const actualRoutes = useSelector(selectActualRoutes);
   const focus = useSelector(selectFocus);
 
   // Initialize Map
@@ -174,6 +185,144 @@ const MapComponent = () => {
       mapInstance.fitBounds(bounds, { padding: 50 });
     }
   }, [routes]);
+
+  // --- SYNC ACTUAL POINTS (Markers) ---
+  useEffect(() => {
+    const mapInstance = map.current;
+    if (!mapInstance) return;
+
+    // Clear old markers
+    actualMarkersRef.current.forEach((m) => m.remove());
+    actualMarkersRef.current = [];
+
+    if (!actualPoints || actualPoints.length === 0) return;
+
+    const bounds = new maplibregl.LngLatBounds();
+
+    actualPoints.forEach((p) => {
+      const popup = new maplibregl.Popup({ offset: 25 }).setHTML(
+        `<strong>${p.name}</strong><p>${p.description || ""}</p>`
+      );
+
+      const marker = new maplibregl.Marker({ color: p.color })
+        .setLngLat(p.coords) // Expecting [lng, lat] or {lng, lat}
+        .setPopup(popup)
+        .addTo(mapInstance);
+      marker.getElement().addEventListener("click", () => {
+        dispatch(
+          setDriverFocus({
+            id: p.id,
+            center: p.coords,
+            zoom: 15,
+          })
+        );
+      });
+      actualMarkersRef.current.push(marker);
+      bounds.extend(p.coords);
+    });
+
+    // Only fit bounds if we have actualPoints and NO routes (routes usually take priority)
+    if (
+      actualPoints.length > 0 &&
+      (!actualRoutes || actualRoutes.length === 0)
+    ) {
+      mapInstance.fitBounds(bounds, { padding: 70, maxZoom: 12 });
+    }
+  }, [actualPoints, actualRoutes]);
+
+  // --- SYNC actualRoutes (Lines) ---
+  useEffect(() => {
+    const mapInstance = map.current;
+    if (!mapInstance) return;
+
+    // 1. Clean up OLD routes that are no longer in the Redux store
+    // Get all current style layers
+    const style = mapInstance.getStyle();
+    if (style && style.layers) {
+      style.layers.forEach((layer) => {
+        if (layer.id.startsWith("actualRoute-layer-")) {
+          const routeId = layer.id.replace("actualRoute-layer-", "");
+          // If this ID is not in the new props, remove it
+          if (!actualRoutes.find((r) => r.id === routeId)) {
+            mapInstance.removeLayer(layer.id);
+            if (mapInstance.getSource(`actualRoute-${routeId}`)) {
+              mapInstance.removeSource(`actualRoute-${routeId}`);
+            }
+          }
+        }
+      });
+    }
+
+    if (!actualRoutes || actualRoutes.length === 0) return;
+
+    const bounds = new maplibregl.LngLatBounds();
+    let hasValidCoords = false;
+
+    actualRoutes.forEach((route) => {
+      const sourceId = `actualRoute-${route.id}`;
+      const layerId = `actualRoute-layer-${route.id}`;
+
+      if (route.coordinates.length === 0) return;
+
+      // Extend bounds to include this route
+      route.coordinates.forEach((coord) => bounds.extend(coord));
+      hasValidCoords = true;
+
+      // If Source exists, update data; else add Source
+      const geoJsonData = {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: route.coordinates,
+        },
+      };
+
+      if (mapInstance.getSource(sourceId)) {
+        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).setData(
+          geoJsonData as GeoJSON.Feature
+        );
+      } else {
+        mapInstance.addSource(sourceId, {
+          type: "geojson",
+          data: geoJsonData as GeoJSON.Feature,
+        });
+      }
+
+      // If Layer doesn't exist, add it
+      if (!mapInstance.getLayer(layerId)) {
+        const layer = mapInstance.addLayer({
+          id: layerId,
+          type: "line",
+          source: sourceId,
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": route.color || "#3b82f6",
+            "line-width": 4,
+            "line-opacity": 0.8,
+          },
+        });
+        layer.on("click", () => {
+          dispatch(
+            setDriverFocus({
+              id: route.id,
+              center:
+                route.coordinates[Math.floor(route.coordinates.length / 2)],
+              zoom: 15,
+            })
+          );
+        });
+      }
+    });
+
+    // 2. Zoom map to show the new route(s)
+    if (hasValidCoords) {
+      mapInstance.fitBounds(bounds, { padding: 50 });
+    }
+  }, [actualRoutes]);
 
   // --- HANDLE FOCUS ---
   useEffect(() => {

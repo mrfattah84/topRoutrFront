@@ -8,24 +8,20 @@ import {
   PhoneFilled,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
-import { decodePolyline6 } from "../result/polyLine";
-import { addPoint, clearMap, setRoutes } from "../map/mapSlice";
+import { decodePolyline6 } from "../../utils/polyLine";
+import {
+  addActualRoute,
+  addPoint,
+  deletePoint,
+  deleteRoute,
+  setRoutes,
+  setShowActualPoint,
+  setShowActualRoute,
+  updateDriverLocation,
+} from "../map/mapSlice";
 import { useGetDriverjobsQuery } from "./liveApi";
 import ProgressBarPoint from "./ProgressBarPoint";
-
-const getVehicleColors = (index: number) => {
-  const colorPalette = [
-    { primary: "#3b82f6", secondary: "#dbeafe" },
-    { primary: "#10b981", secondary: "#d1fae5" },
-    { primary: "#f59e0b", secondary: "#fef3c7" },
-    { primary: "#ef4444", secondary: "#fee2e2" },
-    { primary: "#8b5cf6", secondary: "#ede9fe" },
-    { primary: "#ec4899", secondary: "#fce7f3" },
-    { primary: "#14b8a6", secondary: "#ccfbf1" },
-    { primary: "#f97316", secondary: "#ffedd5" },
-  ];
-  return colorPalette[index % colorPalette.length];
-};
+import { generateUserColor } from "../../utils/generateUserColor";
 
 const DriverCard = (props: { data: Fleet; checked: boolean }) => {
   const { data: driverjobs, isLoading } = useGetDriverjobsQuery(props.data.id);
@@ -34,13 +30,26 @@ const DriverCard = (props: { data: Fleet; checked: boolean }) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    if (isLoading) {
+      dispatch(
+        addActualRoute({
+          id: props.data.id,
+          coordinates: [[51.308942, 35.690536]],
+          color: generateUserColor(props.data.vehicle.id).secondary,
+          show: false,
+        })
+      );
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
     if (isChecked && !isLoading) {
       const coords = decodePolyline6(driverjobs.route.geometry);
       dispatch(
         setRoutes([
           {
             id: props.data.id,
-            color: getVehicleColors(1).primary,
+            color: generateUserColor(props.data.vehicle.id).primary,
             coordinates: coords,
           },
         ])
@@ -48,21 +57,48 @@ const DriverCard = (props: { data: Fleet; checked: boolean }) => {
       driverjobs?.route.steps.forEach((order) => {
         dispatch(
           addPoint({
-            id: order.order_uuid,
+            id: order.order_uuid || "noid",
             name: order.type,
             description: order.job_id || "",
-            color: "#000000",
+            color: generateUserColor(props.data.vehicle.id).primary,
             coords: order.location,
           })
         );
+      });
+      dispatch(setShowActualPoint({ id: props.data.id, show: true }));
+      dispatch(setShowActualRoute({ id: props.data.id, show: true }));
+    } else if (!isChecked && !isLoading) {
+      dispatch(setShowActualPoint({ id: props.data.id, show: true }));
+      dispatch(setShowActualRoute({ id: props.data.id, show: true }));
+      dispatch(deleteRoute(props.data.id));
+      driverjobs?.route.steps.forEach((order) => {
+        dispatch(deletePoint(order.order_uuid || "noid"));
       });
     }
   }, [isChecked, isLoading]);
 
   useEffect(() => {
-    dispatch(clearMap());
     setIsChecked(props.checked);
   }, [props.checked]);
+
+  useEffect(() => {
+    console.log(props.data.geojson);
+    dispatch(
+      updateDriverLocation({
+        id: props.data.id,
+        coords: props.data.geojson?.location.coordinates || [
+          51.308942, 35.690536,
+        ],
+        name:
+          props.data.driver_user.first_name +
+          " " +
+          props.data.driver_user.last_name,
+        color: generateUserColor(props.data.vehicle.id).primary,
+        description: props.data.vehicle.name,
+        show: isChecked || false,
+      })
+    );
+  }, [props.data]);
 
   return (
     <div className="bg-white mx-5 mb-5 rounded-xl border border-[#747474] text-black p-2.5">
@@ -71,7 +107,6 @@ const DriverCard = (props: { data: Fleet; checked: boolean }) => {
           <Checkbox
             checked={isChecked}
             onChange={() => {
-              dispatch(clearMap());
               setIsChecked(!isChecked);
             }}
           />

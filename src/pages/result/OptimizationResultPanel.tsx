@@ -12,26 +12,11 @@ import { useGetVehicleNamesQuery } from "./optimizationApi";
 // Import Redux hooks and actions
 import { useDispatch } from "react-redux";
 import { addPoint, clearMap, setRoutes } from "../map/mapSlice"; // Ensure path is correct
-import { decodePolyline6 } from "./polyLine"; // Ensure this utility exists
-import { setSidebarMenue } from "../formDialog/dialogSlice";
+import { decodePolyline6 } from "../../utils/polyLine"; // Ensure this utility exists
+import { generateUserColor } from "../../utils/generateUserColor";
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
-
-// ... (Keep your existing formatDistance, formatDuration, getVehicleColors helpers here) ...
-const getVehicleColors = (index: number) => {
-  const colorPalette = [
-    { primary: "#3b82f6", secondary: "#dbeafe" },
-    { primary: "#10b981", secondary: "#d1fae5" },
-    { primary: "#f59e0b", secondary: "#fef3c7" },
-    { primary: "#ef4444", secondary: "#fee2e2" },
-    { primary: "#8b5cf6", secondary: "#ede9fe" },
-    { primary: "#ec4899", secondary: "#fce7f3" },
-    { primary: "#14b8a6", secondary: "#ccfbf1" },
-    { primary: "#f97316", secondary: "#ffedd5" },
-  ];
-  return colorPalette[index % colorPalette.length];
-};
 
 const formatDistance = (meters: number) =>
   meters < 1000
@@ -77,12 +62,12 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
 
   const summary = resultData?.summary || {};
 
-  const handleShowRoute = (vehicleId: string, index: number) => {
+  const handleShowRoute = (vehicleId: string) => {
     const vehicle = vehicles.find((v) => v.id === vehicleId);
     if (!vehicle) return;
 
     // Use the utility we just fixed
-    let coords = decodePolyline6(vehicle.geometry);
+    const coords = decodePolyline6(vehicle.geometry);
 
     dispatch(clearMap());
     for (let i = 0; i < vehicle.steps.length; i++) {
@@ -108,11 +93,10 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
           })
         );
       } else {
-        console.log(step);
         dispatch(
           addPoint({
             id: vehicleId,
-            color: getVehicleColors(index).primary,
+            color: generateUserColor(vehicleId).primary,
             coords: step.location,
             name: step.type,
             description: i,
@@ -124,7 +108,7 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
       setRoutes([
         {
           id: vehicleId,
-          color: getVehicleColors(index).primary,
+          color: generateUserColor(vehicleId).primary,
           coordinates: coords,
         },
       ])
@@ -282,7 +266,7 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
 
           <div className="flex flex-col gap-3">
             {vehicles.map((vehicle, index) => {
-              const colors = getVehicleColors(index);
+              const colors = generateUserColor(vehicle.id);
 
               return (
                 <Card
@@ -501,7 +485,7 @@ const OptimizationResultPanel: React.FC<OptimizationResultPanelProps> = ({
                     block
                     icon={<EnvironmentOutlined />}
                     // UPDATED CLICK HANDLER
-                    onClick={() => handleShowRoute(vehicle.id, index)}
+                    onClick={() => handleShowRoute(vehicle.id)}
                     style={{
                       backgroundColor: colors.primary,
                       borderColor: colors.primary,

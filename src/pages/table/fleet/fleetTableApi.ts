@@ -86,6 +86,22 @@ export interface Fleet {
     created_at: string;
     updated_at: string;
   };
+  geojson?: {
+    type: string;
+    driver_id: string;
+    location: {
+      latitude: number;
+      longitude: number;
+      coordinates: [number, number];
+    };
+    recorded_at: string;
+    received_at: string;
+    speed: number;
+    heading: number;
+    accuracy: number;
+    source: string;
+    timestamp: string;
+  };
   start_location: null;
   end_location: null;
   serialNumber: string;
@@ -109,11 +125,44 @@ export const fleetTableApi = apiSlice.injectEndpoints({
       query: () => ({
         url: "/drivers/",
       }),
-      transformResponse: (data) => {
+      transformResponse: (data: Fleet[]) => {
         data.map((fleet) => {
           fleet.key = fleet.id;
         });
         return data;
+      },
+      async onCacheEntryAdded(
+        arg,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
+      ) {
+        // Establish a WebSocket connection
+        const socket = new WebSocket(
+          "ws://172.16.5.12:8008/api/ws/driver-location/?token=" +
+            localStorage.getItem("token")
+        );
+        try {
+          socket.onopen = async () => {
+            await cacheDataLoaded;
+            socket.addEventListener("message", (event) => {
+              const data = JSON.parse(event.data);
+              if (data.type === "location_change") {
+                updateCachedData((draft) => {
+                  const index = draft.findIndex((d) => d.id === data.driver_id);
+                  if (index !== -1) {
+                    draft[index].geojson = data;
+                  } else {
+                    console.warn(
+                      `Driver with ID ${data.driver_id} not found in cache.`
+                    );
+                  }
+                });
+              }
+            });
+            await cacheEntryRemoved;
+          };
+        } catch {
+          console.log("err with socket");
+        }
       },
     }),
     changeFleetActive: builder.mutation({

@@ -20,7 +20,6 @@ const Live = () => {
         }}
       />
       {data?.map((element) => {
-        console.log(element);
         return (
           <DriverCard data={element} checked={checkAll} key={element.id} />
         );
